@@ -1,86 +1,85 @@
-class IntroScene extends Phaser.Scene { // Corregido el nombre de la clase
+class IntroScene extends Phaser.Scene {
   constructor() {
     super({ key: 'IntroScene' });
   }
 
   preload() {
-    // Precargar assets si es necesario
-    this.load.image('menuBg', 'assets/background.jpg');
+    // Precargar assets con rutas correctas
+    this.load.image('menuBg', 'assets/images/menu_background.png');
+    this.load.image('logo', 'assets/images/logo.png');
+    this.load.audio('menuSelect', 'assets/sounds/menu_select.wav');
   }
 
   create() {
-    // Configurar dimensiones
+    // Configuración de dimensiones
     const { width, height } = this.scale;
 
-    // Fondo con imagen
-    this.add.image(0, 0, 'menuBg')
-      .setOrigin(0)
+    // Fondo del menú
+    this.add.image(width/2, height/2, 'menuBg')
       .setDisplaySize(width, height);
 
-    // Contenedor principal
-    const dialog = this.add.container(width / 2, height / 2 - 30);
+    // Logo del juego
+    this.add.image(width/2, 150, 'logo')
+      .setScale(0.8)
+      .setOrigin(0.5);
 
-    // Fondo del diálogo
+    // Contenedor principal
+    const dialog = this.add.container(width/2, height/2 + 50);
+
+    // Fondo del diálogo con diseño mejorado
     const dialogBg = this.add.graphics();
-    dialogBg.fillStyle(0x000000, 0.85);
-    dialogBg.lineStyle(3, 0xFFFFFF, 0.3);
-    dialogBg.fillRoundedRect(-280, -140, 560, 280, 20);
-    dialogBg.strokeRoundedRect(-280, -140, 560, 280, 20);
+    dialogBg.fillStyle(0x1a1a1a, 0.95);
+    dialogBg.lineStyle(2, 0xFF4444, 0.8);
+    dialogBg.fillRoundedRect(-250, -100, 500, 250, 15);
+    dialogBg.strokeRoundedRect(-250, -100, 500, 250, 15);
     dialog.add(dialogBg);
 
-    // Elementos de texto
-    const title = this.add.text(0, -110, 'MILEI KART', {
-      fontSize: '32px',
-      fill: '#FF4444',
-      fontStyle: 'bold',
-      stroke: '#FFFFFF',
-      strokeThickness: 2
-    }).setOrigin(0.5);
-
-    const subtitle = this.add.text(0, -70, 'Carrera contra la inflación', {
-      fontSize: '18px',
-      fill: '#FFFFFF',
-      fontStyle: 'italic'
-    }).setOrigin(0.5);
-
-    const content = this.add.text(0, -20, 
-      "En esta pista encontrarás:\n" +
-      "► Promesas de campaña volátiles\n" +
-      "► Recortes express en cada curva\n" +
-      "► Bonus tracks de retórica viral\n\n" +
-      "¿Llegarás a la meta sin caer\nen las cripto-trampas?",
+    // Texto de contenido actualizado
+    const content = this.add.text(0, -40, 
+      "¡Prepárate para la carrera política!\n\n" +
+      "▸ Esquiva la inflación galopante\n" +
+      "▸ Colecta polémicos power-ups\n" +
+      "▸ Supera a tus rivales ideológicos",
       {
-        fontSize: '18px',
-        fill: '#EEE',
+        fontSize: '20px',
+        fill: '#FFFFFF',
         align: 'center',
-        lineSpacing: 8
+        lineSpacing: 12
       }
     ).setOrigin(0.5);
+    dialog.add(content);
 
-    // Botón funcional
-    const startButton = this.add.text(0, 90, 'INICIAR AJUSTE', {
+    // Botón de inicio con diseño coherente
+    const startButton = this.add.text(0, 80, 'INICIAR CAMPAÑA', {
       fontSize: '24px',
-      fill: '#FFF',
+      fill: '#FFFFFF',
       backgroundColor: '#D32F2F',
-      padding: { x: 25, y: 10 }
+      padding: { x: 30, y: 12 },
+      borderRadius: 8,
+      stroke: '#FFC107',
+      strokeThickness: 2
     }).setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
-      .on('pointerover', () => startButton.setAlpha(0.9))
-      .on('pointerout', () => startButton.setAlpha(1))
+      .on('pointerover', () => {
+        startButton.setScale(1.05);
+        startButton.setStyle({ fill: '#FFC107' });
+      })
+      .on('pointerout', () => {
+        startButton.setScale(1);
+        startButton.setStyle({ fill: '#FFFFFF' });
+      })
       .on('pointerdown', () => {
         this.sound.play('menuSelect');
         this.scene.start('MenuScene');
       });
+    dialog.add(startButton);
 
-    // Añadir elementos al contenedor
-    dialog.add([title, subtitle, content, startButton]);
-
-    // Texto legal
-    this.add.text(width / 2, height - 30,
-      "* Las reglas del juego cambian con cada anuncio oficial",
+    // Texto de créditos
+    this.add.text(width/2, height - 20,
+      "¡Las reglas cambian con cada encuesta!",
       {
-        fontSize: '12px',
-        fill: '#AAA',
+        fontSize: '14px',
+        fill: '#888888',
         fontStyle: 'italic'
       }
     ).setOrigin(0.5);
