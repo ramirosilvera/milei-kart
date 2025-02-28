@@ -1,4 +1,4 @@
-/* Reset básico y estilos para el cuerpo */
+/* Reset y estilos básicos */
 * {
   box-sizing: border-box;
 }
@@ -7,7 +7,7 @@ body, html {
   padding: 0;
   background-color: #000;
   color: #fff;
-  font-family: 'Press Start 2P', cursive;  /* Fuente retro para dar sensación de juego arcade */
+  font-family: 'Press Start 2P', cursive; /* Fuente retro */
 }
 
 /* Contenedor del juego ocupa toda la ventana */
