@@ -5,10 +5,14 @@ class GameScene extends Phaser.Scene {
     this.controlLeft = false;
     this.controlRight = false;
     this.controlUp = false;
-    this.controlDown = false; // para frenar
+    this.controlDown = false; // Para frenar
     this.controlAttack = false;
-    // Objetivos y estado
+    // Variables para combate
+    this.playerHealth = 100;
     this.enemyHealth = 100;
+    // Para el ataque del oponente
+    this.enemyAttackCooldown = 1000; // milisegundos
+    this.lastEnemyAttackTime = 0;
   }
 
   create() {
@@ -16,25 +20,26 @@ class GameScene extends Phaser.Scene {
     this.bgMusic = this.sound.add('bgMusic', { volume: 0.4, loop: true });
     this.bgMusic.play();
 
-    // Fondo de la pista: se mueve para dar sensación de velocidad
+    // Fondo de la pista (se mueve para dar sensación de velocidad)
     this.track = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'trackBg').setOrigin(0);
 
-    // Jugador: escala reducida a ~0.13 (anterior 0.4)
-    this.player = this.physics.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT - 60, 'playerKart').setScale(0.13);
+    // Jugador: se reduce la escala a 0.1 para mayor maniobrabilidad
+    this.player = this.physics.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT - 60, 'playerKart').setScale(0.1);
     this.player.setCollideWorldBounds(true);
     this.player.setDamping(true);
     this.player.setDrag(0.99);
     this.player.setMaxVelocity(200);
 
-    // Enemigo: también con escala 0.13 y con salud
-    this.opponent = this.physics.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'opponentKart').setScale(0.13);
+    // Oponente: también se reduce la escala a 0.1
+    this.opponent = this.physics.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'opponentKart').setScale(0.1);
     this.opponent.setCollideWorldBounds(true);
     this.opponent.setVelocityX(100);
 
-    // HUD: Puntuación y salud del enemigo
+    // HUD: Puntuación y salud de ambos karts
     this.score = 0;
     this.scoreText = this.add.text(10, 10, 'Puntos: 0', { fontSize: '24px', fill: '#fff' });
-    this.enemyHealthText = this.add.text(10, 40, 'Enemigo: 100', { fontSize: '24px', fill: '#ff4444' });
+    this.playerHealthText = this.add.text(10, 40, 'Jugador: 100', { fontSize: '24px', fill: '#66ff66' });
+    this.enemyHealthText = this.add.text(10, 70, 'Enemigo: 100', { fontSize: '24px', fill: '#ff4444' });
 
     // Botón de pausa (se mantiene)
     this.pauseText = this.add.text(GAME_WIDTH - 100, 10, 'Pausa', { fontSize: '24px', fill: '#fff' }).setOrigin(0);
@@ -65,7 +70,7 @@ class GameScene extends Phaser.Scene {
 
     // Colisiones
     this.physics.add.overlap(this.player, this.powerUps, this.collectPowerUp, null, this);
-    this.physics.add.collider(this.player, this.opponent, this.handleEnemyCollision, null, this);
+    this.physics.add.collider(this.player, this.opponent, this.handleCollision, null, this);
     this.physics.add.collider(this.player, this.obstacles, this.handleObstacleCollision, null, this);
 
     // Controles de teclado
@@ -74,18 +79,18 @@ class GameScene extends Phaser.Scene {
     // Controles virtuales en pantalla
     this.createVirtualControls();
 
-    // Duración de la carrera: 60 s
+    // Duración de la partida: 60 segundos
     this.time.delayedCall(60000, () => {
       this.bgMusic.stop();
       this.scene.start('EndScene', { score: this.score });
     }, [], this);
   }
 
-  update() {
-    // Fondo en movimiento
-    this.track.tilePositionY -= 4; // mayor velocidad para sensación de movimiento
+  update(time, delta) {
+    // Mueve el fondo para dar sensación de velocidad
+    this.track.tilePositionY -= 4;
 
-    // Actualización de controles (teclado)
+    // Controles de teclado
     if (this.cursors.left.isDown) { this.player.angle -= 2; }
     if (this.cursors.right.isDown) { this.player.angle += 2; }
     if (this.cursors.up.isDown) {
@@ -95,7 +100,7 @@ class GameScene extends Phaser.Scene {
         this.player.body.acceleration
       );
     } else if (this.cursors.down.isDown || this.controlDown) {
-      // Freno: reduciendo la velocidad gradualmente
+      // Freno: reduce gradualmente la velocidad
       this.player.setAcceleration(0);
       this.player.setVelocity(this.player.body.velocity.x * 0.95, this.player.body.velocity.y * 0.95);
     } else {
@@ -117,23 +122,33 @@ class GameScene extends Phaser.Scene {
       this.player.setVelocity(this.player.body.velocity.x * 0.95, this.player.body.velocity.y * 0.95);
     }
 
-    // Movimiento del oponente: rebote horizontal simple
+    // Movimiento del oponente (rebote horizontal)
     if (this.opponent.x >= GAME_WIDTH - 50) {
       this.opponent.setVelocityX(-100);
     } else if (this.opponent.x <= 50) {
       this.opponent.setVelocityX(100);
     }
 
-    // Revisar objetivo: si el enemigo está cerca y se activa ataque, se le quita salud
-    // Se puede simular que si el jugador está a menos de 150 px y el ataque está activo, reduce salud
-    if (this.controlAttack && Phaser.Math.Distance.Between(
-        this.player.x, this.player.y, this.opponent.x, this.opponent.y
-      ) < 150) {
-      this.dealDamageToEnemy(1); // daño por frame de ataque activo
+    // Lógica de ataque del oponente (si está en rango y cooldown listo)
+    if (Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, this.player.x, this.player.y) < 150) {
+      if (time > this.lastEnemyAttackTime + this.enemyAttackCooldown) {
+        this.enemyAttack();
+        this.lastEnemyAttackTime = time;
+      }
+    }
+
+    // Verificar condiciones de victoria/derrota
+    if (this.playerHealth <= 0) {
+      this.bgMusic.stop();
+      this.scene.start('EndScene', { score: this.score, winner: 'Enemigo' });
+    }
+    if (this.enemyHealth <= 0) {
+      this.bgMusic.stop();
+      this.scene.start('EndScene', { score: this.score, winner: 'Jugador' });
     }
   }
 
-  // Controles virtuales (agregando botón para frenar hacia abajo)
+  // Controles virtuales: se agregan botones para izquierda, derecha, acelerar, frenar y ataque
   createVirtualControls() {
     // Botón Izquierda
     const btnLeft = this.add.rectangle(70, GAME_HEIGHT - 70, 50, 50, 0xffffff, 0.3)
@@ -156,9 +171,9 @@ class GameScene extends Phaser.Scene {
     btnRight.on('pointerout', () => { this.controlRight = false; });
 
     // Botón Arriba (Acelerar)
-    const btnUp = this.add.rectangle(GAME_WIDTH - 200, GAME_HEIGHT - 70, 50, 50, 0xffffff, 0.3)
+    const btnUp = this.add.rectangle(GAME_WIDTH - 220, GAME_HEIGHT - 70, 50, 50, 0xffffff, 0.3)
       .setOrigin(0.5).setScrollFactor(0);
-    this.add.text(GAME_WIDTH - 200, GAME_HEIGHT - 70, '↑', { fontSize: '32px', fill: '#fff' })
+    this.add.text(GAME_WIDTH - 220, GAME_HEIGHT - 70, '↑', { fontSize: '32px', fill: '#fff' })
       .setOrigin(0.5).setScrollFactor(0);
     btnUp.setInteractive();
     btnUp.on('pointerdown', () => { this.controlUp = true; });
@@ -166,9 +181,9 @@ class GameScene extends Phaser.Scene {
     btnUp.on('pointerout', () => { this.controlUp = false; });
 
     // Botón Abajo (Frenar)
-    const btnDown = this.add.rectangle(GAME_WIDTH - 140, GAME_HEIGHT - 70, 50, 50, 0xffffff, 0.3)
+    const btnDown = this.add.rectangle(GAME_WIDTH - 160, GAME_HEIGHT - 70, 50, 50, 0xffffff, 0.3)
       .setOrigin(0.5).setScrollFactor(0);
-    this.add.text(GAME_WIDTH - 140, GAME_HEIGHT - 70, '↓', { fontSize: '32px', fill: '#fff' })
+    this.add.text(GAME_WIDTH - 160, GAME_HEIGHT - 70, '↓', { fontSize: '32px', fill: '#fff' })
       .setOrigin(0.5).setScrollFactor(0);
     btnDown.setInteractive();
     btnDown.on('pointerdown', () => { this.controlDown = true; });
@@ -181,43 +196,38 @@ class GameScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH - 70, GAME_HEIGHT - 70, 'ATAQUE', { fontSize: '16px', fill: '#fff' })
       .setOrigin(0.5).setScrollFactor(0);
     btnAttack.setInteractive();
-    btnAttack.on('pointerdown', () => { 
-      this.controlAttack = true; 
+    btnAttack.on('pointerdown', () => {
+      this.controlAttack = true;
       this.activateAttack();
     });
     btnAttack.on('pointerup', () => { this.controlAttack = false; });
     btnAttack.on('pointerout', () => { this.controlAttack = false; });
   }
 
-  // Spawn de power-ups en posiciones aleatorias por todo el canvas
+  // Los power-ups se generan en posiciones aleatorias por todo el canvas
   spawnPowerUp() {
     const types = ['powerDesinfo', 'powerRetuits', 'powerShield', 'powerHostigamiento'];
     const type = Phaser.Utils.Array.GetRandom(types);
     const x = Phaser.Math.Between(50, GAME_WIDTH - 50);
     const y = Phaser.Math.Between(50, GAME_HEIGHT - 150);
     const powerUp = this.physics.add.sprite(x, y, type).setScale(0.5);
-    // Movimiento aleatorio en Y para simular ambiente dinámico
+    // Se le da movimiento aleatorio vertical
     powerUp.setVelocityY(Phaser.Math.Between(50, 150));
     powerUp.type = type;
     this.powerUps.add(powerUp);
   }
 
-  // Spawn de obstáculos que aparecen en posiciones aleatorias en el canvas
+  // Obstáculos en posiciones aleatorias; penalizan al chocar
   spawnObstacle() {
-    // Crea un obstáculo simple (usamos un rectángulo)
     const x = Phaser.Math.Between(50, GAME_WIDTH - 50);
     const y = Phaser.Math.Between(50, GAME_HEIGHT - 150);
     const width = Phaser.Math.Between(30, 60);
     const height = Phaser.Math.Between(30, 60);
     const obstacle = this.add.rectangle(x, y, width, height, 0xffaa00, 1);
-    // Añadir física al obstáculo
     this.physics.add.existing(obstacle);
     obstacle.body.setImmovable(true);
-    // Agregar al grupo de obstáculos
     this.obstacles.add(obstacle);
-    // Movimiento: el obstáculo se mueve hacia abajo para simular movimiento del ambiente
     obstacle.body.setVelocityY(Phaser.Math.Between(50, 100));
-    // Destruir cuando sale de la pantalla
     obstacle.body.checkWorldBounds = true;
     obstacle.body.outOfBoundsKill = true;
   }
@@ -234,28 +244,32 @@ class GameScene extends Phaser.Scene {
     powerUp.destroy();
   }
 
-  handleEnemyCollision(player, opponent) {
+  // Cuando el jugador colisiona con el oponente, ambos reciben daño
+  handleCollision(player, opponent) {
     this.sound.play('collisionSound');
-    // Al chocar con el enemigo se resta puntuación y se da daño al enemigo
+    // Daño mutuo por colisión
+    this.dealDamageToEnemy(5);
+    this.dealDamageToPlayer(5);
+    // Penaliza puntos
     this.score = Math.max(0, this.score - 10);
     this.scoreText.setText('Puntos: ' + this.score);
-    this.dealDamageToEnemy(5);
   }
 
+  // Colisión con obstáculos afecta solo al jugador
   handleObstacleCollision(player, obstacle) {
     this.sound.play('collisionSound');
-    // Penaliza al jugador
+    this.dealDamageToPlayer(10);
     this.score = Math.max(0, this.score - 15);
     this.scoreText.setText('Puntos: ' + this.score);
     obstacle.destroy();
   }
 
+  // Función de ataque del jugador (ya existente, con daño al enemigo si está cerca)
   activateAttack() {
-    // Ataque: reproduce sonido, efecto visual y daño al enemigo si está en rango
     this.sound.play('attackSound');
     this.player.setTint(0xff9999);
     this.time.delayedCall(300, () => { this.player.clearTint(); }, [], this);
-    // Si el enemigo está cercano, inflige daño extra
+    // Si el enemigo está cercano, inflige daño
     if (Phaser.Math.Distance.Between(this.player.x, this.player.y, this.opponent.x, this.opponent.y) < 150) {
       this.dealDamageToEnemy(10);
     }
@@ -263,16 +277,26 @@ class GameScene extends Phaser.Scene {
     this.scoreText.setText('Puntos: ' + this.score);
   }
 
+  // Función para que el oponente ataque al jugador
+  enemyAttack() {
+    this.sound.play('attackSound');
+    // Efecto visual en el oponente
+    this.opponent.setTint(0xffaaaa);
+    this.time.delayedCall(300, () => { this.opponent.clearTint(); }, [], this);
+    this.dealDamageToPlayer(10);
+  }
+
+  // Aplica daño al enemigo y actualiza el HUD
   dealDamageToEnemy(amount) {
     this.enemyHealth -= amount;
     if (this.enemyHealth < 0) this.enemyHealth = 0;
     this.enemyHealthText.setText('Enemigo: ' + this.enemyHealth);
-    // Si el enemigo es vencido, se detiene y desaparece
-    if (this.enemyHealth <= 0) {
-      this.opponent.disableBody(true, true);
-      // Opción: sumar puntos extra al vencer al enemigo
-      this.score += 50;
-      this.scoreText.setText('Puntos: ' + this.score);
-    }
+  }
+
+  // Aplica daño al jugador y actualiza el HUD
+  dealDamageToPlayer(amount) {
+    this.playerHealth -= amount;
+    if (this.playerHealth < 0) this.playerHealth = 0;
+    this.playerHealthText.setText('Jugador: ' + this.playerHealth);
   }
 }
