@@ -1,58 +1,84 @@
-class IntroScene extends Phaser.Scene {
+class IntroScene extends Phaser.Scaser.Scene {
   constructor() {
     super({ key: 'IntroScene' });
   }
 
   create() {
-    // Fondo
-    this.add.image(0, 0, 'menuBg').setOrigin(0).setDisplaySize(GAME_WIDTH, GAME_HEIGHT);
+    // Fondo con efecto de paralaje
+    const bg = this.add.image(0, 0, 'menuBg').setOrigin(0).setDisplaySize(GAME_WIDTH, GAME_HEIGHT);
 
-    // Contenedor principal
-    const introContainer = this.add.container(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+    // Contenedor principal centrado
+    const dialog = this.add.container(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 30);
 
-    // Fondo del diálogo
+    // Fondo de diálogo con borde
     const dialogBg = this.add.graphics();
-    dialogBg.fillStyle(0x000000, 0.7);
-    dialogBg.fillRoundedRect(-300, -150, 600, 300, 15);
-    introContainer.add(dialogBg);
+    dialogBg.fillStyle(0x000000, 0.85);
+    dialogBg.lineStyle(3, 0xFFFFFF, 0.3);
+    dialogBg.fillRoundedRect(-280, -140, 560, 280, 20);
+    dialogBg.strokeRoundedRect(-280, -140, 560, 280, 20);
+    dialog.add(dialogBg);
 
-    // Texto introductorio
-    const introText = this.add.text(0, -80,
-      "MILEI KART: LA GRAN ESTAMPIDA\n\n" +
-      "En la pista donde las promesas chocan con la inflación,\n" +
-      "deberás esquivar:\n" +
-      "• Criptoestafas disfrazadas de libertad\n" +
-      "• Recortes presupuestarios express\n" +
-      "• Batallas culturales en curva cerrada\n\n" +
-      "[ ¿Podrás cruzar la meta sin perder el sentido común? ]",
-      { 
-        fontSize: '18px', 
-        fill: '#FFF', 
-        align: 'center', 
-        wordWrap: { width: 550 },
-        lineSpacing: 6
+    // Título principal
+    const title = this.add.text(0, -110, 'MILEI KART', {
+      fontSize: '32px',
+      fill: '#FF4444',
+      fontStyle: 'bold',
+      stroke: '#FFFFFF',
+      strokeThickness: 2
+    }).setOrigin(0.5);
+    dialog.add(title);
+
+    // Subtítulo
+    const subtitle = this.add.text(0, -70, 'Carrera contra la inflación', {
+      fontSize: '18px',
+      fill: '#FFFFFF',
+      fontStyle: 'italic'
+    }).setOrigin(0.5);
+    dialog.add(subtitle);
+
+    // Cuerpo del texto
+    const content = this.add.text(0, -20, 
+      "En esta pista encontrarás:\n" +
+      "► Promesas de campaña volatiles\n" +
+      "► Recortes express en cada curva\n" +
+      "► Bonus tracks de retórica viral\n\n" +
+      "¿Podrás llegar a la meta\nsin caer en las cripto-trampas?",
+      {
+        fontSize: '18px',
+        fill: '#EEE',
+        align: 'center',
+        lineSpacing: 8
       }
     ).setOrigin(0.5);
-    introContainer.add(introText);
+    dialog.add(content);
 
-    // Botón funcional (versión corregida)
-    const continueButton = this.add.text(0, 100, 'ACEPTAR DECRETAZO', {
-      fontSize: '22px',
-      fill: '#FF2222',
-      fontStyle: 'bold',
-      backgroundColor: '#FFFFFF20',
-      padding: { x: 20, y: 10 }
+    // Botón principal
+    const startButton = this.add.text(0, 90, 'INICIAR AJUSTE', {
+      fontSize: '24px',
+      fill: '#FFF',
+      backgroundColor: '#D32F2F',
+      padding: { x: 25, y: 10 },
+      borderRadius: 5
     }).setOrigin(0.5);
-    
-    // Configuración interactiva CORRECTA
-    continueButton.setInteractive(new Phaser.Geom.Rectangle(0, 0, continueButton.width, continueButton.height), Phaser.Geom.Rectangle.Contains);
-    continueButton.on('pointerover', () => continueButton.setAlpha(0.8));
-    continueButton.on('pointerout', () => continueButton.setAlpha(1));
-    continueButton.on('pointerdown', () => {
-      this.sound.play('menuSelect');
-      this.scene.start('MenuScene');
-    });
-    
-    introContainer.add(continueButton);
+
+    // Interactividad del botón
+    startButton.setInteractive({ useHandCursor: true })
+      .on('pointerover', () => startButton.setAlpha(0.9))
+      .on('pointerout', () => startButton.setAlpha(1))
+      .on('pointerdown', () => {
+        this.sound.play('menuSelect');
+        this.scene.start('MenuScene');
+      });
+    dialog.add(startButton);
+
+    // Texto legal inferior
+    this.add.text(GAME_WIDTH/2, GAME_HEIGHT - 30,
+      "* Las reglas del juego cambian con cada anuncio oficial",
+      {
+        fontSize: '12px',
+        fill: '#AAA',
+        fontStyle: 'italic'
+      }
+    ).setOrigin(0.5);
   }
 }
