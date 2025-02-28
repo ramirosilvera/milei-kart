@@ -1,16 +1,26 @@
-class IntroScene extends Phaser.Scaser.Scene {
+class IntroScene extends Phaser.Scene { // Corregido el nombre de la clase
   constructor() {
     super({ key: 'IntroScene' });
   }
 
+  preload() {
+    // Precargar assets si es necesario
+    this.load.image('menuBg', 'assets/background.jpg');
+  }
+
   create() {
-    // Fondo con efecto de paralaje
-    const bg = this.add.image(0, 0, 'menuBg').setOrigin(0).setDisplaySize(GAME_WIDTH, GAME_HEIGHT);
+    // Configurar dimensiones
+    const { width, height } = this.scale;
 
-    // Contenedor principal centrado
-    const dialog = this.add.container(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 30);
+    // Fondo con imagen
+    this.add.image(0, 0, 'menuBg')
+      .setOrigin(0)
+      .setDisplaySize(width, height);
 
-    // Fondo de diálogo con borde
+    // Contenedor principal
+    const dialog = this.add.container(width / 2, height / 2 - 30);
+
+    // Fondo del diálogo
     const dialogBg = this.add.graphics();
     dialogBg.fillStyle(0x000000, 0.85);
     dialogBg.lineStyle(3, 0xFFFFFF, 0.3);
@@ -18,7 +28,7 @@ class IntroScene extends Phaser.Scaser.Scene {
     dialogBg.strokeRoundedRect(-280, -140, 560, 280, 20);
     dialog.add(dialogBg);
 
-    // Título principal
+    // Elementos de texto
     const title = this.add.text(0, -110, 'MILEI KART', {
       fontSize: '32px',
       fill: '#FF4444',
@@ -26,23 +36,19 @@ class IntroScene extends Phaser.Scaser.Scene {
       stroke: '#FFFFFF',
       strokeThickness: 2
     }).setOrigin(0.5);
-    dialog.add(title);
 
-    // Subtítulo
     const subtitle = this.add.text(0, -70, 'Carrera contra la inflación', {
       fontSize: '18px',
       fill: '#FFFFFF',
       fontStyle: 'italic'
     }).setOrigin(0.5);
-    dialog.add(subtitle);
 
-    // Cuerpo del texto
     const content = this.add.text(0, -20, 
       "En esta pista encontrarás:\n" +
-      "► Promesas de campaña volatiles\n" +
+      "► Promesas de campaña volátiles\n" +
       "► Recortes express en cada curva\n" +
       "► Bonus tracks de retórica viral\n\n" +
-      "¿Podrás llegar a la meta\nsin caer en las cripto-trampas?",
+      "¿Llegarás a la meta sin caer\nen las cripto-trampas?",
       {
         fontSize: '18px',
         fill: '#EEE',
@@ -50,29 +56,27 @@ class IntroScene extends Phaser.Scaser.Scene {
         lineSpacing: 8
       }
     ).setOrigin(0.5);
-    dialog.add(content);
 
-    // Botón principal
+    // Botón funcional
     const startButton = this.add.text(0, 90, 'INICIAR AJUSTE', {
       fontSize: '24px',
       fill: '#FFF',
       backgroundColor: '#D32F2F',
-      padding: { x: 25, y: 10 },
-      borderRadius: 5
-    }).setOrigin(0.5);
-
-    // Interactividad del botón
-    startButton.setInteractive({ useHandCursor: true })
+      padding: { x: 25, y: 10 }
+    }).setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
       .on('pointerover', () => startButton.setAlpha(0.9))
       .on('pointerout', () => startButton.setAlpha(1))
       .on('pointerdown', () => {
         this.sound.play('menuSelect');
         this.scene.start('MenuScene');
       });
-    dialog.add(startButton);
 
-    // Texto legal inferior
-    this.add.text(GAME_WIDTH/2, GAME_HEIGHT - 30,
+    // Añadir elementos al contenedor
+    dialog.add([title, subtitle, content, startButton]);
+
+    // Texto legal
+    this.add.text(width / 2, height - 30,
       "* Las reglas del juego cambian con cada anuncio oficial",
       {
         fontSize: '12px',
