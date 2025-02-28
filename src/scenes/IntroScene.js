@@ -16,44 +16,41 @@ class IntroScene extends Phaser.Scene {
     introBg.fillRoundedRect(-350, -200, 700, 400, 20);
     introContainer.add(introBg);
 
-    // Texto de introducción actualizado
+    // Texto de introducción
     const introText = this.add.text(0, -150,
-      "¡ALERTA MILEIKART: LA CARRERA DEL RELATO!\n\n" +
-      "🔥 ¿Qué pasa cuando un 'anarcocapitalista' hereda el país con inflación galopante y un FMI en modo acoso?\n\n" +
-      "📢 En este delirante hypergame descubrirás:\n" +
-      "- Cómo convertir memes en política pública\n" +
-      "- La fórmula mágica: ¡Bajar la inflación con recortes de TikTok!\n" +
-      "- El mega-escándalo DólarCoin: ¿Estafa cripto o 'libertad financiera'? 🚨\n\n" +
-      "⚠️ ADVERTENCIA: Contiene:\n" +
-      "- Dosis letales de retórica libertaria\n" +
-      - "Privatizaciones express (¡hasta tu abuela en Marketplace!)\n" +
-      "- Batallas campales contra 'la casta' (que ahora incluye hasta al fantasma de Perón)\n\n" +
-      "¿Podrás esquivar la hiperinflación, los cuadernazos oligarcas y llegar primero al ajuste estructural?\n\n" +
-      "¡ESTO NO ES UN JUEGO! (Bueno, sí... pero con datos reales de la balanza comercial)",
+      "MILEI KART: LA PISTA DEL RELATO\n\n" +
+      "En un país donde la inflación corre más que los autos,\n" +
+      "te presentamos el juego donde las promesas de campaña\n" +
+      "chocan contra la realidad económica.\n\n" +
+      "▸ Domina el arte de convertir memes en política pública\n" +
+      "▸ Esquiva el FMI y las criptoestafas 'libertarias'\n" +
+      "▸ Supera a la 'casta'... aunque hoy seas parte de ella\n\n" +
+      "¿Podrás llegar a la meta sin devaluar el sentido común?",
       { 
-        fontSize: '16px', 
+        fontSize: '18px', 
         fill: '#fff', 
         align: 'center', 
-        wordWrap: { width: 650 },
-        fontStyle: 'bold'
+        wordWrap: { width: 600 },
+        lineSpacing: 8
       }
     ).setOrigin(0.5);
     
-    // Efectos de texto
-    const palabrasClave = ["DólarCoin", "FMI", "casta", "hiperinflación"];
+    // Destacar términos clave
+    const palabrasClave = ["inflación", "FMI", "criptoestafas", "'casta'"];
     palabrasClave.forEach(palabra => {
-      introText.setStyle({ color: '#ff5555' }, palabra);
+      introText.setStyle({ color: '#FF5555' }, palabra);
     });
 
     introContainer.add(introText);
 
-    // Botón con texto irónico
-    const continueText = this.add.text(0, 150, 'Aceptar Shock Fiscal para Continuar →', 
+    // Botón irónico minimalista
+    const continueText = this.add.text(0, 150, '[ Iniciar Ajuste ]', 
       { 
-        fontSize: '20px', 
-        fill: '#ff0000',
-        fontStyle: 'italic',
-        backgroundColor: '#ffffff30'
+        fontSize: '24px', 
+        fill: '#FF4444',
+        fontStyle: 'bold',
+        stroke: '#fff',
+        strokeThickness: 2
       }
     ).setOrigin(0.5);
     
@@ -64,13 +61,13 @@ class IntroScene extends Phaser.Scene {
     });
     introContainer.add(continueText);
 
-    // Texto legal satírico
-    this.add.text(GAME_WIDTH/2, GAME_HEIGHT - 30,
-      "*Este juego no endosa ni recibe dólar blue. Consulte a su economista de cabecera. Advertencia BCRA: Incluye chistes de oferta y demanda.",
+    // Pie de texto satírico
+    this.add.text(GAME_WIDTH/2, GAME_HEIGHT - 40,
+      "*Dólar no incluido - Tasas de interés sujetas al humor del mercado",
       {
         fontSize: '12px',
-        fill: '#888',
-        align: 'center'
+        fill: '#AAA',
+        fontStyle: 'italic'
       }
     ).setOrigin(0.5);
   }
