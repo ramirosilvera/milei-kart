@@ -1,302 +1,302 @@
 class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameScene' });
-    // Controles virtuales
-    this.controlLeft = false;
-    this.controlRight = false;
-    this.controlUp = false;
-    this.controlDown = false; // Para frenar
-    this.controlAttack = false;
-    // Variables para combate
-    this.playerHealth = 100;
-    this.enemyHealth = 100;
-    // Para el ataque del oponente
-    this.enemyAttackCooldown = 1000; // milisegundos
-    this.lastEnemyAttackTime = 0;
+    this.controls = {
+      left: false,
+      right: false,
+      up: false,
+      down: false,
+      attack: false
+    };
+    this.combat = {
+      playerHealth: 100,
+      enemyHealth: 100,
+      lastAttack: 0,
+      attackCooldown: 800
+    };
+    this.gameVars = {
+      score: 0,
+      multiplier: 1,
+      combo: 0,
+      powerUpsActive: []
+    };
   }
 
   create() {
-    // Música de fondo
-    this.bgMusic = this.sound.add('bgMusic', { volume: 0.4, loop: true });
-    this.bgMusic.play();
-
-    // Fondo de la pista (se mueve para dar sensación de velocidad)
-    this.track = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'trackBg').setOrigin(0);
-
-    // Jugador: se reduce la escala a 0.1 para mayor maniobrabilidad
-    this.player = this.physics.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT - 60, 'playerKart').setScale(0.1);
-    this.player.setCollideWorldBounds(true);
-    this.player.setDamping(true);
-    this.player.setDrag(0.99);
-    this.player.setMaxVelocity(200);
-
-    // Oponente: también se reduce la escala a 0.1
-    this.opponent = this.physics.add.sprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'opponentKart').setScale(0.1);
-    this.opponent.setCollideWorldBounds(true);
-    this.opponent.setVelocityX(100);
-
-    // HUD: Puntuación y salud de ambos karts
-    this.score = 0;
-    this.scoreText = this.add.text(10, 10, 'Puntos: 0', { fontSize: '24px', fill: '#fff' });
-    this.playerHealthText = this.add.text(10, 40, 'Jugador: 100', { fontSize: '24px', fill: '#66ff66' });
-    this.enemyHealthText = this.add.text(10, 70, 'Enemigo: 100', { fontSize: '24px', fill: '#ff4444' });
-
-    // Botón de pausa (se mantiene)
-    this.pauseText = this.add.text(GAME_WIDTH - 100, 10, 'Pausa', { fontSize: '24px', fill: '#fff' }).setOrigin(0);
-    this.pauseText.setInteractive({ useHandCursor: true });
-    this.pauseText.on('pointerdown', () => {
-      this.sound.play('menuSelect');
-      this.scene.launch('PauseScene');
-      this.scene.pause();
-    });
-
-    // Grupo de power-ups
-    this.powerUps = this.physics.add.group();
-    this.time.addEvent({
-      delay: 3000,
-      callback: this.spawnPowerUp,
-      callbackScope: this,
-      loop: true
-    });
-
-    // Grupo de obstáculos
-    this.obstacles = this.physics.add.group();
-    this.time.addEvent({
-      delay: 4000,
-      callback: this.spawnObstacle,
-      callbackScope: this,
-      loop: true
-    });
-
-    // Colisiones
-    this.physics.add.overlap(this.player, this.powerUps, this.collectPowerUp, null, this);
-    this.physics.add.collider(this.player, this.opponent, this.handleCollision, null, this);
-    this.physics.add.collider(this.player, this.obstacles, this.handleObstacleCollision, null, this);
-
-    // Controles de teclado
-    this.cursors = this.input.keyboard.createCursorKeys();
-
-    // Controles virtuales en pantalla
-    this.createVirtualControls();
-
-    // Duración de la partida: 60 segundos
-    this.time.delayedCall(60000, () => {
-      this.bgMusic.stop();
-      this.scene.start('EndScene', { score: this.score });
-    }, [], this);
+    this.setupWorld();
+    this.setupPlayers();
+    this.setupUI();
+    this.setupEvents();
+    this.setupControls();
+    this.setupAudio();
   }
 
-  update(time, delta) {
-    // Mueve el fondo para dar sensación de velocidad
-    this.track.tilePositionY -= 4;
+  setupWorld() {
+    // Fondo animado con efecto de profundidad
+    this.bg = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'trackBg')
+      .setOrigin(0)
+      .setTileScale(0.5, 0.5)
+      .setScrollFactor(0, 0.3);
+    
+    // Efecto de partículas para velocidad
+    this.speedParticles = this.add.particles('speedLines');
+    this.speedEmitter = this.speedParticles.createEmitter({
+      speed: 200,
+      scale: { start: 0.8, end: 0 },
+      blendMode: 'ADD',
+      frequency: 50,
+      lifespan: 2000
+    }).stop();
 
-    // Controles de teclado
-    if (this.cursors.left.isDown) { this.player.angle -= 2; }
-    if (this.cursors.right.isDown) { this.player.angle += 2; }
-    if (this.cursors.up.isDown) {
+    // Grupo de power-ups con física mejorada
+    this.powerUps = this.physics.add.group({
+      collideWorldBounds: true,
+      bounceX: 0.8,
+      bounceY: 0.8
+    });
+
+    // Pool de obstáculos para mejor performance
+    this.obstacles = this.add.group({
+      classType: Phaser.GameObjects.Rectangle,
+      maxSize: 10,
+      runChildUpdate: true
+    });
+  }
+
+  setupPlayers() {
+    // Jugador con física arcade mejorada
+    this.player = this.physics.add.sprite(GAME_WIDTH/2, GAME_HEIGHT-100, 'playerKart')
+      .setScale(0.08)
+      .setDrag(0.96)
+      .setMaxVelocity(400)
+      .setCollideWorldBounds(true)
+      .setBounce(0.3);
+    
+    // Oponente con IA mejorada
+    this.opponent = this.physics.add.sprite(GAME_WIDTH/2, 100, 'opponentKart')
+      .setScale(0.08)
+      .setMaxVelocity(300)
+      .setCollideWorldBounds(true)
+      .setBounce(0.5);
+    
+    // Mejora de colisiones
+    this.physics.add.collider(this.player, this.opponent, (p1, p2) => {
+      this.handleCollision(p1, p2, 8);
+    });
+    
+    this.physics.add.collider(this.player, this.obstacles, (player, obstacle) => {
+      this.handleObstacleCollision(player, obstacle, 15);
+    });
+  }
+
+  setupUI() {
+    // HUD estilo panel de trading
+    this.createHealthBar(20, 20, this.combat.playerHealth, 0x00ff00, 'TU POPULARIDAD');
+    this.createHealthBar(GAME_WIDTH - 220, 20, this.combat.enemyHealth, 0xff0000, 'OPOSICIÓN');
+    
+    // Score con estilo ticker bursátil
+    this.scoreText = this.add.text(GAME_WIDTH/2, 10, `📈 ${this.gameVars.score} PUNTOS\nX${this.gameVars.multiplier}`, {
+      fontSize: '24px',
+      fill: '#ffd700',
+      stroke: '#000',
+      strokeThickness: 3,
+      align: 'center'
+    }).setOrigin(0.5, 0);
+    
+    // Botones de control rediseñados
+    this.createJoypad();
+    this.createAttackButton();
+  }
+
+  setupEvents() {
+    // Eventos mejorados con gestión de tiempo
+    this.powerUpTimer = this.time.addEvent({
+      delay: 2500,
+      callback: this.spawnSatiricalPowerUp,
+      loop: true
+    });
+    
+    this.obstacleTimer = this.time.addEvent({
+      delay: 3500,
+      callback: this.spawnObstacle,
+      loop: true
+    });
+    
+    // Temporizador de partida con actualización visual
+    this.gameTimer = this.time.delayedCall(60000, () => this.endGame(), [], this);
+    this.createTimerBar();
+  }
+
+  update(time) {
+    this.updateMovement(time);
+    this.updateAI(time);
+    this.updateWorldEffects();
+    this.updateCombat(time);
+    this.updateUI();
+  }
+
+  updateMovement() {
+    // Movimiento fluido con aceleración progresiva
+    const rotationSpeed = 3.5;
+    const acceleration = 400;
+    
+    if (this.controls.left) this.player.angle -= rotationSpeed;
+    if (this.controls.right) this.player.angle += rotationSpeed;
+    
+    if (this.controls.up) {
       this.physics.velocityFromRotation(
         Phaser.Math.DegToRad(this.player.angle - 90),
-        200,
+        acceleration,
         this.player.body.acceleration
       );
-    } else if (this.cursors.down.isDown || this.controlDown) {
-      // Freno: reduce gradualmente la velocidad
-      this.player.setAcceleration(0);
-      this.player.setVelocity(this.player.body.velocity.x * 0.95, this.player.body.velocity.y * 0.95);
+      this.speedEmitter.start();
     } else {
       this.player.setAcceleration(0);
+      this.speedEmitter.stop();
     }
-
-    // Controles virtuales
-    if (this.controlLeft) { this.player.angle -= 2; }
-    if (this.controlRight) { this.player.angle += 2; }
-    if (this.controlUp) {
-      this.physics.velocityFromRotation(
-        Phaser.Math.DegToRad(this.player.angle - 90),
-        200,
-        this.player.body.acceleration
+    
+    if (this.controls.down) {
+      this.player.setVelocity(
+        this.player.body.velocity.x * 0.85,
+        this.player.body.velocity.y * 0.85
       );
     }
-    if (this.controlDown) {
-      this.player.setAcceleration(0);
-      this.player.setVelocity(this.player.body.velocity.x * 0.95, this.player.body.velocity.y * 0.95);
-    }
+  }
 
-    // Movimiento del oponente (rebote horizontal)
-    if (this.opponent.x >= GAME_WIDTH - 50) {
-      this.opponent.setVelocityX(-100);
-    } else if (this.opponent.x <= 50) {
-      this.opponent.setVelocityX(100);
+  updateAI(time) {
+    // IA mejorada con seguimiento al jugador
+    const distanceToPlayer = Phaser.Math.Distance.BetweenPoints(this.opponent, this.player);
+    
+    if (distanceToPlayer > 300) {
+      this.physics.moveToObject(this.opponent, this.player, 250);
+    } else if (distanceToPlayer < 150) {
+      this.opponent.setVelocity(-this.opponent.body.velocity.x, -this.opponent.body.velocity.y);
     }
-
-    // Lógica de ataque del oponente (si está en rango y cooldown listo)
-    if (Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, this.player.x, this.player.y) < 150) {
-      if (time > this.lastEnemyAttackTime + this.enemyAttackCooldown) {
-        this.enemyAttack();
-        this.lastEnemyAttackTime = time;
-      }
-    }
-
-    // Verificar condiciones de victoria/derrota
-    if (this.playerHealth <= 0) {
-      this.bgMusic.stop();
-      this.scene.start('EndScene', { score: this.score, winner: 'Enemigo' });
-    }
-    if (this.enemyHealth <= 0) {
-      this.bgMusic.stop();
-      this.scene.start('EndScene', { score: this.score, winner: 'Jugador' });
+    
+    // Ataques con diferentes patrones
+    if (time > this.combat.lastAttack + this.combat.attackCooldown) {
+      this.enemyAttack(time);
+      this.combat.lastAttack = time;
+      this.combat.attackCooldown = Phaser.Math.Between(800, 1200);
     }
   }
 
-  // Controles virtuales: se agregan botones para izquierda, derecha, acelerar, frenar y ataque
-  createVirtualControls() {
-    // Botón Izquierda
-    const btnLeft = this.add.rectangle(70, GAME_HEIGHT - 70, 50, 50, 0xffffff, 0.3)
-      .setOrigin(0.5).setScrollFactor(0);
-    this.add.text(70, GAME_HEIGHT - 70, '←', { fontSize: '32px', fill: '#fff' })
-      .setOrigin(0.5).setScrollFactor(0);
-    btnLeft.setInteractive();
-    btnLeft.on('pointerdown', () => { this.controlLeft = true; });
-    btnLeft.on('pointerup', () => { this.controlLeft = false; });
-    btnLeft.on('pointerout', () => { this.controlLeft = false; });
-
-    // Botón Derecha
-    const btnRight = this.add.rectangle(140, GAME_HEIGHT - 70, 50, 50, 0xffffff, 0.3)
-      .setOrigin(0.5).setScrollFactor(0);
-    this.add.text(140, GAME_HEIGHT - 70, '→', { fontSize: '32px', fill: '#fff' })
-      .setOrigin(0.5).setScrollFactor(0);
-    btnRight.setInteractive();
-    btnRight.on('pointerdown', () => { this.controlRight = true; });
-    btnRight.on('pointerup', () => { this.controlRight = false; });
-    btnRight.on('pointerout', () => { this.controlRight = false; });
-
-    // Botón Arriba (Acelerar)
-    const btnUp = this.add.rectangle(GAME_WIDTH - 220, GAME_HEIGHT - 70, 50, 50, 0xffffff, 0.3)
-      .setOrigin(0.5).setScrollFactor(0);
-    this.add.text(GAME_WIDTH - 220, GAME_HEIGHT - 70, '↑', { fontSize: '32px', fill: '#fff' })
-      .setOrigin(0.5).setScrollFactor(0);
-    btnUp.setInteractive();
-    btnUp.on('pointerdown', () => { this.controlUp = true; });
-    btnUp.on('pointerup', () => { this.controlUp = false; });
-    btnUp.on('pointerout', () => { this.controlUp = false; });
-
-    // Botón Abajo (Frenar)
-    const btnDown = this.add.rectangle(GAME_WIDTH - 160, GAME_HEIGHT - 70, 50, 50, 0xffffff, 0.3)
-      .setOrigin(0.5).setScrollFactor(0);
-    this.add.text(GAME_WIDTH - 160, GAME_HEIGHT - 70, '↓', { fontSize: '32px', fill: '#fff' })
-      .setOrigin(0.5).setScrollFactor(0);
-    btnDown.setInteractive();
-    btnDown.on('pointerdown', () => { this.controlDown = true; });
-    btnDown.on('pointerup', () => { this.controlDown = false; });
-    btnDown.on('pointerout', () => { this.controlDown = false; });
-
-    // Botón Ataque
-    const btnAttack = this.add.rectangle(GAME_WIDTH - 70, GAME_HEIGHT - 70, 70, 70, 0xff0000, 0.4)
-      .setOrigin(0.5).setScrollFactor(0);
-    this.add.text(GAME_WIDTH - 70, GAME_HEIGHT - 70, 'ATAQUE', { fontSize: '16px', fill: '#fff' })
-      .setOrigin(0.5).setScrollFactor(0);
-    btnAttack.setInteractive();
-    btnAttack.on('pointerdown', () => {
-      this.controlAttack = true;
-      this.activateAttack();
+  spawnSatiricalPowerUp() {
+    const powerUps = [
+      { type: 'dolar', texture: 'dolarSprite', effect: 'addScore', value: 50 },
+      { type: 'fakeNews', texture: 'fakeNews', effect: 'confuseEnemy' },
+      { type: 'libertad', texture: 'libertadShield', effect: 'shield' },
+      { type: 'impuesto', texture: 'taxBomb', effect: 'penalty' }
+    ];
+    
+    const powerUp = Phaser.Utils.Array.GetRandom(powerUps);
+    const x = Phaser.Math.Between(50, GAME_WIDTH-50);
+    const y = Phaser.Math.Between(50, GAME_HEIGHT-50);
+    
+    const sprite = this.physics.add.sprite(x, y, powerUp.texture)
+      .setScale(0.3)
+      .setData('powerData', powerUp)
+      .setVelocityY(Phaser.Math.Between(80, 120));
+    
+    this.powerUps.add(sprite);
+    
+    this.physics.add.overlap(this.player, sprite, (player, power) => {
+      this.applyPowerUp(power.getData('powerData'));
+      power.destroy();
     });
-    btnAttack.on('pointerup', () => { this.controlAttack = false; });
-    btnAttack.on('pointerout', () => { this.controlAttack = false; });
   }
 
-  // Los power-ups se generan en posiciones aleatorias por todo el canvas
-  spawnPowerUp() {
-    const types = ['powerDesinfo', 'powerRetuits', 'powerShield', 'powerHostigamiento'];
-    const type = Phaser.Utils.Array.GetRandom(types);
-    const x = Phaser.Math.Between(50, GAME_WIDTH - 50);
-    const y = Phaser.Math.Between(50, GAME_HEIGHT - 150);
-    const powerUp = this.physics.add.sprite(x, y, type).setScale(0.5);
-    // Se le da movimiento aleatorio vertical
-    powerUp.setVelocityY(Phaser.Math.Between(50, 150));
-    powerUp.type = type;
-    this.powerUps.add(powerUp);
+  applyPowerUp(power) {
+    const effects = {
+      addScore: () => {
+        this.gameVars.score += power.value * this.gameVars.multiplier;
+        this.showFloatingText(`+${power.value} ${power.type.toUpperCase()}`, 0x00ff00);
+      },
+      confuseEnemy: () => {
+        this.opponent.setVelocity(Phaser.Math.Between(-300, 300), Phaser.Math.Between(-300, 300));
+        this.showFloatingText('FAKE NEWS!', 0xff0000);
+      },
+      shield: () => {
+        this.player.setTint(0x00ffff);
+        this.time.delayedCall(3000, () => this.player.clearTint());
+      },
+      penalty: () => {
+        this.gameVars.score = Math.max(0, this.gameVars.score - 100);
+        this.showFloatingText('-100 IMPUESTOS!', 0xff0000);
+      }
+    };
+    
+    effects[power.effect]?.();
+    this.sound.play('powerUp');
   }
 
-  // Obstáculos en posiciones aleatorias; penalizan al chocar
-  spawnObstacle() {
-    const x = Phaser.Math.Between(50, GAME_WIDTH - 50);
-    const y = Phaser.Math.Between(50, GAME_HEIGHT - 150);
-    const width = Phaser.Math.Between(30, 60);
-    const height = Phaser.Math.Between(30, 60);
-    const obstacle = this.add.rectangle(x, y, width, height, 0xffaa00, 1);
-    this.physics.add.existing(obstacle);
-    obstacle.body.setImmovable(true);
-    this.obstacles.add(obstacle);
-    obstacle.body.setVelocityY(Phaser.Math.Between(50, 100));
-    obstacle.body.checkWorldBounds = true;
-    obstacle.body.outOfBoundsKill = true;
-  }
-
-  collectPowerUp(player, powerUp) {
-    this.sound.play('itemPickup');
-    let points = 10;
-    if (powerUp.type === 'powerDesinfo') points = 15;
-    else if (powerUp.type === 'powerRetuits') points = 20;
-    else if (powerUp.type === 'powerShield') points = 25;
-    else if (powerUp.type === 'powerHostigamiento') points = 30;
-    this.score += points;
-    this.scoreText.setText('Puntos: ' + this.score);
-    powerUp.destroy();
-  }
-
-  // Cuando el jugador colisiona con el oponente, ambos reciben daño
-  handleCollision(player, opponent) {
-    this.sound.play('collisionSound');
-    // Daño mutuo por colisión
-    this.dealDamageToEnemy(5);
-    this.dealDamageToPlayer(5);
-    // Penaliza puntos
-    this.score = Math.max(0, this.score - 10);
-    this.scoreText.setText('Puntos: ' + this.score);
-  }
-
-  // Colisión con obstáculos afecta solo al jugador
-  handleObstacleCollision(player, obstacle) {
-    this.sound.play('collisionSound');
-    this.dealDamageToPlayer(10);
-    this.score = Math.max(0, this.score - 15);
-    this.scoreText.setText('Puntos: ' + this.score);
-    obstacle.destroy();
-  }
-
-  // Función de ataque del jugador (ya existente, con daño al enemigo si está cerca)
-  activateAttack() {
-    this.sound.play('attackSound');
-    this.player.setTint(0xff9999);
-    this.time.delayedCall(300, () => { this.player.clearTint(); }, [], this);
-    // Si el enemigo está cercano, inflige daño
-    if (Phaser.Math.Distance.Between(this.player.x, this.player.y, this.opponent.x, this.opponent.y) < 150) {
-      this.dealDamageToEnemy(10);
+  enemyAttack(time) {
+    const attackTypes = ['melee', 'ranged', 'area'];
+    const attack = Phaser.Utils.Array.GetRandom(attackTypes);
+    
+    switch(attack) {
+      case 'melee':
+        if (Phaser.Math.Distance.BetweenPoints(this.player, this.opponent) < 200) {
+          this.handleCollision(this.player, this.opponent, 15);
+        }
+        break;
+        
+      case 'ranged':
+        const projectile = this.physics.add.sprite(this.opponent.x, this.opponent.y, 'attackSprite')
+          .setVelocityY(500)
+          .setScale(0.1);
+        this.physics.add.overlap(this.player, projectile, () => {
+          this.dealDamageToPlayer(10);
+          projectile.destroy();
+        });
+        break;
     }
-    this.score += 5;
-    this.scoreText.setText('Puntos: ' + this.score);
+    
+    this.opponent.setTint(0xff0000);
+    this.time.delayedCall(200, () => this.opponent.clearTint());
+    this.sound.play('enemyAttack');
   }
 
-  // Función para que el oponente ataque al jugador
-  enemyAttack() {
-    this.sound.play('attackSound');
-    // Efecto visual en el oponente
-    this.opponent.setTint(0xffaaaa);
-    this.time.delayedCall(300, () => { this.opponent.clearTint(); }, [], this);
-    this.dealDamageToPlayer(10);
+  createJoypad() {
+    // Joystick virtual rediseñado
+    const joyBase = this.add.circle(GAME_WIDTH - 100, GAME_HEIGHT - 100, 40, 0xffffff, 0.3)
+      .setInteractive();
+    const joyHandle = this.add.circle(joyBase.x, joyBase.y, 20, 0xffffff, 0.5);
+    
+    this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+      const vec = new Phaser.Math.Vector2(dragX - joyBase.x, dragY - joyBase.y);
+      const angle = vec.angle();
+      const distance = Math.min(vec.length(), 40);
+      
+      joyHandle.setPosition(
+        joyBase.x + Math.cos(angle) * distance,
+        joyBase.y + Math.sin(angle) * distance
+      );
+      
+      this.player.angle = Phaser.Math.RadToDeg(angle) + 90;
+      this.controls.up = distance > 10;
+    });
+    
+    this.input.on('dragend', () => {
+      joyHandle.setPosition(joyBase.x, joyBase.y);
+      this.controls.up = false;
+    });
   }
 
-  // Aplica daño al enemigo y actualiza el HUD
-  dealDamageToEnemy(amount) {
-    this.enemyHealth -= amount;
-    if (this.enemyHealth < 0) this.enemyHealth = 0;
-    this.enemyHealthText.setText('Enemigo: ' + this.enemyHealth);
-  }
-
-  // Aplica daño al jugador y actualiza el HUD
-  dealDamageToPlayer(amount) {
-    this.playerHealth -= amount;
-    if (this.playerHealth < 0) this.playerHealth = 0;
-    this.playerHealthText.setText('Jugador: ' + this.playerHealth);
+  showFloatingText(text, color) {
+    const textObj = this.add.text(this.player.x, this.player.y - 50, text, {
+      fontSize: '20px',
+      fill: `#${color.toString(16)}`,
+      stroke: '#000',
+      strokeThickness: 3
+    }).setOrigin(0.5);
+    
+    this.tweens.add({
+      targets: textObj,
+      y: textObj.y - 100,
+      alpha: 0,
+      duration: 1000,
+      onComplete: () => textObj.destroy()
+    });
   }
 }
