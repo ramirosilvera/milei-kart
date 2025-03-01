@@ -1,18 +1,12 @@
-/* Reset y estilos básicos */
-* {
-  box-sizing: border-box;
-}
-body, html {
+body {
   margin: 0;
   padding: 0;
-  background-color: #000;
-  color: #fff;
-  font-family: 'Press Start 2P', cursive; /* Fuente retro */
+  background-color: #121212;
+  font-family: 'Arial', sans-serif;
 }
 
-/* Contenedor del juego ocupa toda la ventana */
-#game-container {
-  width: 100%;
-  height: 100vh;
+canvas {
   display: block;
+  margin: 0 auto;
+  border: 3px solid #fff;
 }
