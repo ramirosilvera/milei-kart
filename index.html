@@ -2,25 +2,14 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Milei Kart: Carrera Manipuladora</title>
-  <link rel="stylesheet" href="css/styles.css">
-  <!-- Phaser 3 desde CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Cargamos Phaser 3 -->
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 </head>
 <body>
-  <div id="game-container"></div>
-
-  <!-- Archivos JS de escenas y configuración -->
-  <script src="src/scenes/BootScene.js"></script>
-  <script src="src/scenes/IntroScene.js"></script>
-  <script src="src/scenes/MenuScene.js"></script>
-  <script src="src/scenes/TutorialScene.js"></script>
-  <script src="src/scenes/GameScene.js"></script>
-  <script src="src/scenes/PauseScene.js"></script>
-  <script src="src/scenes/EndScene.js"></script>
-
-  <!-- Archivo principal que inicia el juego -->
-  <script src="src/main.js"></script>
+  <!-- Usamos type="module" para importar los archivos JS -->
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>
-
