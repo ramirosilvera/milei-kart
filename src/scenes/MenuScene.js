@@ -36,17 +36,17 @@ export default class MenuScene extends Phaser.Scene {
             fill: '#fff'
         }).setOrigin(0.5);
         buttonContainer.add([buttonBg, buttonText]);
-        buttonContainer.setSize(200, 60);
-        buttonContainer.setInteractive(new Phaser.Geom.Rectangle(-100, -30, 200, 60), Phaser.Geom.Rectangle.Contains);
 
-        buttonContainer.on('pointerdown', () => {
+        // Se establece la interactividad directamente sobre el botón (buttonBg)
+        buttonBg.setInteractive({ useHandCursor: true });
+        buttonBg.on('pointerdown', () => {
             this.sound.play('menuSelect');
             this.scene.start('GameScene');
         });
-        buttonContainer.on('pointerover', () => {
+        buttonBg.on('pointerover', () => {
             buttonBg.setFillStyle(0xFF5555);
         });
-        buttonContainer.on('pointerout', () => {
+        buttonBg.on('pointerout', () => {
             buttonBg.setFillStyle(0xFF2222);
         });
     }
