@@ -4,7 +4,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
-        // Fondo de la pista
+        // Fondo de la pista a pantalla completa
         this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'track')
             .setDisplaySize(this.cameras.main.width, this.cameras.main.height);
 
@@ -22,17 +22,17 @@ export default class GameScene extends Phaser.Scene {
         // Grupo para power-ups
         this.powerUps = this.physics.add.group();
 
-        // Crear contenedor del jugador (reduce escala a 0.4)
+        // Crear contenedor del jugador (se reduce a 0.13, 1/3 de 0.4)
         this.playerContainer = this.add.container(this.cameras.main.centerX, this.cameras.main.height - 100);
-        this.playerSprite = this.add.sprite(0, 0, 'mileiKart').setScale(0.4);
+        this.playerSprite = this.add.sprite(0, 0, 'mileiKart').setScale(0.13);
         this.playerContainer.add(this.playerSprite);
         this.physics.world.enable(this.playerContainer);
         this.playerContainer.body.setCollideWorldBounds(true);
         this.playerContainer.body.setDrag(600, 600);
         this.playerContainer.body.setMaxVelocity(300);
 
-        // Crear sprite del oponente (escala 0.4)
-        this.opponent = this.physics.add.sprite(this.cameras.main.centerX, 100, 'opponentKart').setScale(0.4);
+        // Crear sprite del oponente (se reduce a 0.13 también)
+        this.opponent = this.physics.add.sprite(this.cameras.main.centerX, 100, 'opponentKart').setScale(0.13);
         this.opponent.body.setCollideWorldBounds(true);
         this.opponent.body.setBounce(1, 0);
         this.opponent.body.setVelocityX(100);
@@ -41,7 +41,7 @@ export default class GameScene extends Phaser.Scene {
         this.playerBullets = this.physics.add.group();
         this.opponentBullets = this.physics.add.group();
 
-        // Colisiones de proyectiles
+        // Colisiones de proyectiles con karts
         this.physics.add.overlap(this.playerBullets, this.opponent, this.hitOpponent, null, this);
         this.physics.add.overlap(this.opponentBullets, this.playerContainer, this.hitPlayer, null, this);
 
@@ -57,10 +57,10 @@ export default class GameScene extends Phaser.Scene {
         this.moveUp = false;
         this.moveDown = false;
 
-        // Crear controles en pantalla
+        // Crear controles en pantalla (botones direccionales y de ataque)
         this.createOnScreenControls();
 
-        // Temporizador para ataques del oponente cada 2 segundos
+        // Ataques automáticos del oponente cada 2 segundos
         this.time.addEvent({
             delay: 2000,
             callback: this.opponentAttack,
@@ -68,7 +68,7 @@ export default class GameScene extends Phaser.Scene {
             loop: true
         });
 
-        // Temporizador para spawn de power-ups cada 8 segundos
+        // Spawn de power-ups cada 8 segundos
         this.time.addEvent({
             delay: 8000,
             callback: this.spawnPowerUp,
@@ -81,7 +81,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     createOnScreenControls() {
-        // Controles direccionales (esquina inferior izquierda)
+        // Controles direccionales en la esquina inferior izquierda
         const controlContainer = this.add.container(100, this.cameras.main.height - 100);
 
         // Botón Izquierda
@@ -118,7 +118,7 @@ export default class GameScene extends Phaser.Scene {
 
         controlContainer.add([btnLeft, txtLeft, btnRight, txtRight, btnUp, txtUp, btnDown, txtDown]);
 
-        // Botón de Ataque (esquina inferior derecha)
+        // Botón de Ataque en la esquina inferior derecha
         const attackContainer = this.add.container(this.cameras.main.width - 100, this.cameras.main.height - 100);
         const btnAttack = this.add.rectangle(0, 0, 70, 70, 0xFF2222, 1).setStrokeStyle(2, 0xffffff);
         const txtAttack = this.add.text(0, 0, "Ataque", { fontSize: '18px', fill: '#fff' }).setOrigin(0.5);
@@ -129,7 +129,7 @@ export default class GameScene extends Phaser.Scene {
 
     update() {
         const acceleration = 600;
-        // Movimiento: teclado o controles táctiles
+        // Movimiento mediante teclado o controles táctiles
         if (this.cursors.left.isDown || this.moveLeft) {
             this.playerContainer.body.setAccelerationX(-acceleration);
         } else if (this.cursors.right.isDown || this.moveRight) {
@@ -166,7 +166,6 @@ export default class GameScene extends Phaser.Scene {
         bullet.setSize(10, 10);
         bullet.displayWidth = 10;
         bullet.displayHeight = 10;
-        // Representación gráfica del proyectil
         const graphics = this.add.graphics();
         graphics.fillStyle(0xFFAA00, 1);
         graphics.fillRect(0, 0, 10, 10);
@@ -174,7 +173,7 @@ export default class GameScene extends Phaser.Scene {
         bullet.graphics.x = this.playerContainer.x;
         bullet.graphics.y = this.playerContainer.y;
 
-        // Calcular dirección hacia el oponente
+        // Dirección hacia el oponente
         const direction = new Phaser.Math.Vector2(this.opponent.x - this.playerContainer.x, this.opponent.y - this.playerContainer.y).normalize();
         bullet.body.velocity.x = direction.x * 400;
         bullet.body.velocity.y = direction.y * 400;
@@ -223,15 +222,16 @@ export default class GameScene extends Phaser.Scene {
     }
 
     spawnPowerUp() {
-        // Array de tipos de power-up
+        // Tipos de power-up disponibles
         const types = ['powerUpDesinformation', 'powerUpRetuits', 'powerUpShield', 'powerUpHostigamiento'];
         const type = Phaser.Utils.Array.GetRandom(types);
-        // Posición aleatoria en la pista (evitando bordes)
+        // Posición aleatoria dentro de límites seguros
         const x = Phaser.Math.Between(100, this.cameras.main.width - 100);
         const y = Phaser.Math.Between(150, this.cameras.main.height - 150);
-        const powerUp = this.powerUps.create(x, y, type).setScale(0.4);
-        // Animación de rebote (tween)
-        this.tweens.add({
+        // En este caso, los power-ups se agrandan x3 (escala 1.2)
+        const powerUp = this.powerUps.create(x, y, type).setScale(1.2);
+        // Guardamos el tween para poder detenerlo al recoger el power-up
+        powerUp.tween = this.tweens.add({
             targets: powerUp,
             y: powerUp.y - 20,
             yoyo: true,
@@ -243,22 +243,25 @@ export default class GameScene extends Phaser.Scene {
 
     collectPowerUp(player, powerUp) {
         this.sound.play('itemPickup');
+        // Detener tween si existe para evitar errores
+        if (powerUp.tween) powerUp.tween.stop();
         const type = powerUp.texture.key;
         powerUp.destroy();
 
+        // Aplicar efecto según el tipo de power-up
         switch(type) {
             case 'powerUpDesinformation':
-                // Ralentizar al oponente durante 5 segundos
+                // Ralentiza al oponente durante 5 segundos
                 this.opponent.body.velocity.x *= 0.5;
                 this.time.delayedCall(5000, () => { this.opponent.body.velocity.x *= 2; }, [], this);
                 break;
             case 'powerUpRetuits':
-                // Permitir atacar sin cooldown durante 5 segundos
+                // Permite atacar sin cooldown durante 5 segundos
                 this.playerBoostAttack = true;
                 this.time.delayedCall(5000, () => { this.playerBoostAttack = false; }, [], this);
                 break;
             case 'powerUpShield':
-                // Otorgar un escudo que absorbe un golpe
+                // Otorga un escudo que absorbe un golpe
                 this.playerStatus.shield = true;
                 if (!this.shieldSprite) {
                     this.shieldSprite = this.add.circle(0, 0, 45, 0x00FF00, 0.3);
@@ -266,7 +269,7 @@ export default class GameScene extends Phaser.Scene {
                 }
                 break;
             case 'powerUpHostigamiento':
-                // Desatar una ráfaga de 5 ataques consecutivos
+                // Desata una ráfaga de 5 ataques consecutivos
                 for (let i = 0; i < 5; i++) {
                     this.time.delayedCall(i * 200, () => { this.playerAttack(); }, [], this);
                 }
