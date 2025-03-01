@@ -4,7 +4,7 @@ export default class UIScene extends Phaser.Scene {
     }
 
     create() {
-        // Crear un contenedor para la UI que no se mueva (scroll fijo)
+        // Crear un contenedor para la UI fijo en pantalla
         this.uiContainer = this.add.container(0, 0);
         
         // Barra de salud del jugador (esquina superior izquierda)
