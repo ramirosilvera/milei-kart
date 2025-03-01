@@ -3,7 +3,7 @@ export default class BootScene extends Phaser.Scene {
         super('BootScene');
     }
     preload() {
-        // Cargamos el logo para branding (opcional)
+        // Cargamos el logo para branding
         this.load.image('logo', 'assets/images/logo.png');
     }
     create() {
