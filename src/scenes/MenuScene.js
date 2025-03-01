@@ -1,96 +1,53 @@
-class MenuScene extends Phaser.Scene {
-  constructor() {
-    super({ key: 'MenuScene' });
-  }
+export default class MenuScene extends Phaser.Scene {
+    constructor() {
+        super('MenuScene');
+    }
+    create() {
+        // Fondo del menú adaptado a toda la pantalla
+        this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'menuBackground')
+            .setDisplaySize(this.cameras.main.width, this.cameras.main.height);
 
-  create() {
-    const { width, height } = this.scale;
+        // Contenedor del título
+        const titleContainer = this.add.container(this.cameras.main.centerX, 150);
+        const titleBg = this.add.rectangle(0, 0, 600, 80, 0x000000, 0.5);
+        const titleText = this.add.text(0, 0, "Milei Kart: Carrera Manipuladora", {
+            fontSize: '32px',
+            fill: '#32CD32',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        titleContainer.add([titleBg, titleText]);
 
-    // Fondo con efecto de crisis permanente
-    this.add.image(width/2, height/2, 'menuBg')
-      .setDisplaySize(width, height)
-      .setTint(0x1a1a1a)
-      .setAlpha(0.95);
+        // Narrativa satírica
+        const narrative = "En un mundo asolado por la desinformación, escándalos cripto y ataques implacables a la oposición, Milei toma el volante. La misión: destruir al kart rival. ¡Demuestra tu capacidad manipuladora en una carrera explosiva!";
+        const narrativeContainer = this.add.container(this.cameras.main.centerX, 300);
+        const narrativeBg = this.add.rectangle(0, 0, 700, 150, 0x000000, 0.5);
+        const narrativeText = this.add.text(0, 0, narrative, {
+            fontSize: '20px',
+            fill: '#fff',
+            wordWrap: { width: 680 }
+        }).setOrigin(0.5);
+        narrativeContainer.add([narrativeBg, narrativeText]);
 
-    // Contenedor principal estilo centro de operaciones
-    const menuPanel = this.add.container(width/2, height/2);
-    
-    // Marco estilo informe confidencial
-    menuPanel.add(this.add.graphics()
-      .fillStyle(0x2d2d2d, 0.98)
-      .fillRoundedRect(-300, -180, 600, 360, 20)
-      .lineStyle(3, 0xFF4444)
-      .strokeRoundedRect(-300, -180, 600, 360, 20)
-    );
+        // Botón para iniciar la partida
+        const buttonContainer = this.add.container(this.cameras.main.centerX, 500);
+        const buttonBg = this.add.rectangle(0, 0, 200, 60, 0xFF2222, 1).setStrokeStyle(2, 0xffffff);
+        const buttonText = this.add.text(0, 0, "JUGAR", {
+            fontSize: '28px',
+            fill: '#fff'
+        }).setOrigin(0.5);
+        buttonContainer.add([buttonBg, buttonText]);
+        buttonContainer.setSize(200, 60);
+        buttonContainer.setInteractive(new Phaser.Geom.Rectangle(-100, -30, 200, 60), Phaser.Geom.Rectangle.Contains);
 
-    // Titular alineado con la narrativa
-    menuPanel.add(this.add.text(0, -150, 'CENTRO DE CONTROL HEGEMÓNICO', {
-      fontSize: '28px',
-      fill: '#FF5555',
-      fontStyle: 'bold',
-      stroke: '#000',
-      strokeThickness: 2,
-      align: 'center'
-    }).setOrigin(0.5));
-
-    // Función para creación de botones
-    const createBtn = (y, text, scene) => {
-      return this.add.text(0, y, text, {
-        fontSize: '24px',
-        fill: '#FFF',
-        backgroundColor: '#B71C1C',
-        padding: { x: 30, y: 12 },
-        borderRadius: 8,
-        stroke: '#FFD600',
-        strokeThickness: 2
-      }).setOrigin(0.5)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerover', () => {
-          this.sound.play('menuHover');
-          this.tweens.add({ targets: this, scale: 1.05, duration: 100 });
-        })
-        .on('pointerout', () => this.tweens.add({ targets: this, scale: 1, duration: 100 }))
-        .on('pointerdown', () => {
-          this.sound.play('menuSelect');
-          this.scene.start(scene);
+        buttonContainer.on('pointerdown', () => {
+            this.sound.play('menuSelect');
+            this.scene.start('GameScene');
         });
-    };
-
-    // Botones principales
-    menuPanel.add([
-      createBtn(-50, '🕹️ INICIAR MANIPULACIÓN', 'GameScene'),
-      createBtn(50, '📜 PROTOCOLO DE SHOCK', 'TutorialScene')
-    ]);
-
-    // Ticker de noticias estilo cadena nacional
-    const newsTicker = this.add.text(0, height - 40, 
-      'ÚLTIMO: Dólar blue supera los $1500 | Nuevo DNU permite privatizar el aire | Encuesta oficial: 98% de aprobación (muestra: 50 personas)',
-      {
-        fontSize: '18px',
-        fill: '#FFFFFF',
-        backgroundColor: '#D32F2F'
-      }
-    ).setOrigin(0, 0.5);
-    
-    this.tweens.add({
-      targets: newsTicker,
-      x: -newsTicker.width,
-      duration: 15000,
-      repeat: -1
-    });
-
-    // Widget de indicadores críticos
-    this.add.text(20, 20, 'CRISIS ACTUAL:\n• Inflación: 15.3%\n• Reservas: -$12.450M', {
-      fontSize: '16px',
-      fill: '#FF5555',
-      lineSpacing: 8
-    });
-
-    // Patrocinio irónico actualizado
-    this.add.text(width - 20, height - 30, 'PATROCINADO POR:\n"CRYPTO FUTURE"', {
-      fontSize: '16px',
-      fill: '#FFD600',
-      align: 'right'
-    }).setOrigin(1, 0.5);
-  }
+        buttonContainer.on('pointerover', () => {
+            buttonBg.setFillStyle(0xFF5555);
+        });
+        buttonContainer.on('pointerout', () => {
+            buttonBg.setFillStyle(0xFF2222);
+        });
+    }
 }
