@@ -1,302 +1,238 @@
-class GameScene extends Phaser.Scene {
-  constructor() {
-    super({ key: 'GameScene' });
-    this.controls = {
-      left: false,
-      right: false,
-      up: false,
-      down: false,
-      attack: false
-    };
-    this.combat = {
-      playerHealth: 100,
-      enemyHealth: 100,
-      lastAttack: 0,
-      attackCooldown: 800
-    };
-    this.gameVars = {
-      score: 0,
-      multiplier: 1,
-      combo: 0,
-      powerUpsActive: []
-    };
-  }
-
-  create() {
-    this.setupWorld();
-    this.setupPlayers();
-    this.setupUI();
-    this.setupEvents();
-    this.setupControls();
-    this.setupAudio();
-  }
-
-  setupWorld() {
-    // Fondo animado con efecto de profundidad
-    this.bg = this.add.tileSprite(0, 0, GAME_WIDTH, GAME_HEIGHT, 'trackBg')
-      .setOrigin(0)
-      .setTileScale(0.5, 0.5)
-      .setScrollFactor(0, 0.3);
-    
-    // Efecto de partículas para velocidad
-    this.speedParticles = this.add.particles('speedLines');
-    this.speedEmitter = this.speedParticles.createEmitter({
-      speed: 200,
-      scale: { start: 0.8, end: 0 },
-      blendMode: 'ADD',
-      frequency: 50,
-      lifespan: 2000
-    }).stop();
-
-    // Grupo de power-ups con física mejorada
-    this.powerUps = this.physics.add.group({
-      collideWorldBounds: true,
-      bounceX: 0.8,
-      bounceY: 0.8
-    });
-
-    // Pool de obstáculos para mejor performance
-    this.obstacles = this.add.group({
-      classType: Phaser.GameObjects.Rectangle,
-      maxSize: 10,
-      runChildUpdate: true
-    });
-  }
-
-  setupPlayers() {
-    // Jugador con física arcade mejorada
-    this.player = this.physics.add.sprite(GAME_WIDTH/2, GAME_HEIGHT-100, 'playerKart')
-      .setScale(0.08)
-      .setDrag(0.96)
-      .setMaxVelocity(400)
-      .setCollideWorldBounds(true)
-      .setBounce(0.3);
-    
-    // Oponente con IA mejorada
-    this.opponent = this.physics.add.sprite(GAME_WIDTH/2, 100, 'opponentKart')
-      .setScale(0.08)
-      .setMaxVelocity(300)
-      .setCollideWorldBounds(true)
-      .setBounce(0.5);
-    
-    // Mejora de colisiones
-    this.physics.add.collider(this.player, this.opponent, (p1, p2) => {
-      this.handleCollision(p1, p2, 8);
-    });
-    
-    this.physics.add.collider(this.player, this.obstacles, (player, obstacle) => {
-      this.handleObstacleCollision(player, obstacle, 15);
-    });
-  }
-
-  setupUI() {
-    // HUD estilo panel de trading
-    this.createHealthBar(20, 20, this.combat.playerHealth, 0x00ff00, 'TU POPULARIDAD');
-    this.createHealthBar(GAME_WIDTH - 220, 20, this.combat.enemyHealth, 0xff0000, 'OPOSICIÓN');
-    
-    // Score con estilo ticker bursátil
-    this.scoreText = this.add.text(GAME_WIDTH/2, 10, `📈 ${this.gameVars.score} PUNTOS\nX${this.gameVars.multiplier}`, {
-      fontSize: '24px',
-      fill: '#ffd700',
-      stroke: '#000',
-      strokeThickness: 3,
-      align: 'center'
-    }).setOrigin(0.5, 0);
-    
-    // Botones de control rediseñados
-    this.createJoypad();
-    this.createAttackButton();
-  }
-
-  setupEvents() {
-    // Eventos mejorados con gestión de tiempo
-    this.powerUpTimer = this.time.addEvent({
-      delay: 2500,
-      callback: this.spawnSatiricalPowerUp,
-      loop: true
-    });
-    
-    this.obstacleTimer = this.time.addEvent({
-      delay: 3500,
-      callback: this.spawnObstacle,
-      loop: true
-    });
-    
-    // Temporizador de partida con actualización visual
-    this.gameTimer = this.time.delayedCall(60000, () => this.endGame(), [], this);
-    this.createTimerBar();
-  }
-
-  update(time) {
-    this.updateMovement(time);
-    this.updateAI(time);
-    this.updateWorldEffects();
-    this.updateCombat(time);
-    this.updateUI();
-  }
-
-  updateMovement() {
-    // Movimiento fluido con aceleración progresiva
-    const rotationSpeed = 3.5;
-    const acceleration = 400;
-    
-    if (this.controls.left) this.player.angle -= rotationSpeed;
-    if (this.controls.right) this.player.angle += rotationSpeed;
-    
-    if (this.controls.up) {
-      this.physics.velocityFromRotation(
-        Phaser.Math.DegToRad(this.player.angle - 90),
-        acceleration,
-        this.player.body.acceleration
-      );
-      this.speedEmitter.start();
-    } else {
-      this.player.setAcceleration(0);
-      this.speedEmitter.stop();
+export default class GameScene extends Phaser.Scene {
+    constructor() {
+        super('GameScene');
     }
-    
-    if (this.controls.down) {
-      this.player.setVelocity(
-        this.player.body.velocity.x * 0.85,
-        this.player.body.velocity.y * 0.85
-      );
-    }
-  }
 
-  updateAI(time) {
-    // IA mejorada con seguimiento al jugador
-    const distanceToPlayer = Phaser.Math.Distance.BetweenPoints(this.opponent, this.player);
-    
-    if (distanceToPlayer > 300) {
-      this.physics.moveToObject(this.opponent, this.player, 250);
-    } else if (distanceToPlayer < 150) {
-      this.opponent.setVelocity(-this.opponent.body.velocity.x, -this.opponent.body.velocity.y);
-    }
-    
-    // Ataques con diferentes patrones
-    if (time > this.combat.lastAttack + this.combat.attackCooldown) {
-      this.enemyAttack(time);
-      this.combat.lastAttack = time;
-      this.combat.attackCooldown = Phaser.Math.Between(800, 1200);
-    }
-  }
+    create() {
+        // Fondo de la pista
+        this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'track')
+            .setDisplaySize(this.cameras.main.width, this.cameras.main.height);
 
-  spawnSatiricalPowerUp() {
-    const powerUps = [
-      { type: 'dolar', texture: 'dolarSprite', effect: 'addScore', value: 50 },
-      { type: 'fakeNews', texture: 'fakeNews', effect: 'confuseEnemy' },
-      { type: 'libertad', texture: 'libertadShield', effect: 'shield' },
-      { type: 'impuesto', texture: 'taxBomb', effect: 'penalty' }
-    ];
-    
-    const powerUp = Phaser.Utils.Array.GetRandom(powerUps);
-    const x = Phaser.Math.Between(50, GAME_WIDTH-50);
-    const y = Phaser.Math.Between(50, GAME_HEIGHT-50);
-    
-    const sprite = this.physics.add.sprite(x, y, powerUp.texture)
-      .setScale(0.3)
-      .setData('powerData', powerUp)
-      .setVelocityY(Phaser.Math.Between(80, 120));
-    
-    this.powerUps.add(sprite);
-    
-    this.physics.add.overlap(this.player, sprite, (player, power) => {
-      this.applyPowerUp(power.getData('powerData'));
-      power.destroy();
-    });
-  }
+        // Reproducir música de fondo
+        this.bgMusic = this.sound.add('bgMusic', { loop: true, volume: 0.5 });
+        this.bgMusic.play();
 
-  applyPowerUp(power) {
-    const effects = {
-      addScore: () => {
-        this.gameVars.score += power.value * this.gameVars.multiplier;
-        this.showFloatingText(`+${power.value} ${power.type.toUpperCase()}`, 0x00ff00);
-      },
-      confuseEnemy: () => {
-        this.opponent.setVelocity(Phaser.Math.Between(-300, 300), Phaser.Math.Between(-300, 300));
-        this.showFloatingText('FAKE NEWS!', 0xff0000);
-      },
-      shield: () => {
-        this.player.setTint(0x00ffff);
-        this.time.delayedCall(3000, () => this.player.clearTint());
-      },
-      penalty: () => {
-        this.gameVars.score = Math.max(0, this.gameVars.score - 100);
-        this.showFloatingText('-100 IMPUESTOS!', 0xff0000);
-      }
-    };
-    
-    effects[power.effect]?.();
-    this.sound.play('powerUp');
-  }
+        // Inicializar salud
+        this.playerHealth = 100;
+        this.opponentHealth = 100;
 
-  enemyAttack(time) {
-    const attackTypes = ['melee', 'ranged', 'area'];
-    const attack = Phaser.Utils.Array.GetRandom(attackTypes);
-    
-    switch(attack) {
-      case 'melee':
-        if (Phaser.Math.Distance.BetweenPoints(this.player, this.opponent) < 200) {
-          this.handleCollision(this.player, this.opponent, 15);
-        }
-        break;
-        
-      case 'ranged':
-        const projectile = this.physics.add.sprite(this.opponent.x, this.opponent.y, 'attackSprite')
-          .setVelocityY(500)
-          .setScale(0.1);
-        this.physics.add.overlap(this.player, projectile, () => {
-          this.dealDamageToPlayer(10);
-          projectile.destroy();
+        // Crear contenedor del jugador y habilitar física
+        this.playerContainer = this.add.container(this.cameras.main.centerX, this.cameras.main.height - 100);
+        this.playerSprite = this.add.sprite(0, 0, 'mileiKart').setScale(0.5);
+        this.playerContainer.add(this.playerSprite);
+        this.physics.world.enable(this.playerContainer);
+        this.playerContainer.body.setCollideWorldBounds(true);
+        this.playerContainer.body.setDrag(600, 600);
+        this.playerContainer.body.setMaxVelocity(300);
+
+        // Crear sprite del oponente con IA simple
+        this.opponent = this.physics.add.sprite(this.cameras.main.centerX, 100, 'opponentKart').setScale(0.5);
+        this.opponent.body.setCollideWorldBounds(true);
+        this.opponent.body.setBounce(1, 0);
+        this.opponent.body.setVelocityX(100);
+
+        // Grupos de proyectiles
+        this.playerBullets = this.physics.add.group();
+        this.opponentBullets = this.physics.add.group();
+
+        // Colisiones entre proyectiles y karts
+        this.physics.add.overlap(this.playerBullets, this.opponent, this.hitOpponent, null, this);
+        this.physics.add.overlap(this.opponentBullets, this.playerContainer, this.hitPlayer, null, this);
+
+        // Configurar controles de teclado
+        this.cursors = this.input.keyboard.createCursorKeys();
+
+        // Variables para controles en pantalla
+        this.moveLeft = false;
+        this.moveRight = false;
+        this.moveUp = false;
+        this.moveDown = false;
+        this.attackCooldown = false;
+
+        // Crear botones en pantalla (direccionales y de ataque)
+        this.createOnScreenControls();
+
+        // Temporizador para ataques del oponente
+        this.time.addEvent({
+            delay: 2000,
+            callback: this.opponentAttack,
+            callbackScope: this,
+            loop: true
         });
-        break;
+
+        // Emitir estado inicial de salud para la UI
+        this.registry.events.emit("updateHealth", { player: this.playerHealth, opponent: this.opponentHealth });
     }
-    
-    this.opponent.setTint(0xff0000);
-    this.time.delayedCall(200, () => this.opponent.clearTint());
-    this.sound.play('enemyAttack');
-  }
 
-  createJoypad() {
-    // Joystick virtual rediseñado
-    const joyBase = this.add.circle(GAME_WIDTH - 100, GAME_HEIGHT - 100, 40, 0xffffff, 0.3)
-      .setInteractive();
-    const joyHandle = this.add.circle(joyBase.x, joyBase.y, 20, 0xffffff, 0.5);
-    
-    this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
-      const vec = new Phaser.Math.Vector2(dragX - joyBase.x, dragY - joyBase.y);
-      const angle = vec.angle();
-      const distance = Math.min(vec.length(), 40);
-      
-      joyHandle.setPosition(
-        joyBase.x + Math.cos(angle) * distance,
-        joyBase.y + Math.sin(angle) * distance
-      );
-      
-      this.player.angle = Phaser.Math.RadToDeg(angle) + 90;
-      this.controls.up = distance > 10;
-    });
-    
-    this.input.on('dragend', () => {
-      joyHandle.setPosition(joyBase.x, joyBase.y);
-      this.controls.up = false;
-    });
-  }
+    createOnScreenControls() {
+        // Contenedor de controles direccionales en la esquina inferior izquierda
+        const controlContainer = this.add.container(100, this.cameras.main.height - 100);
 
-  showFloatingText(text, color) {
-    const textObj = this.add.text(this.player.x, this.player.y - 50, text, {
-      fontSize: '20px',
-      fill: `#${color.toString(16)}`,
-      stroke: '#000',
-      strokeThickness: 3
-    }).setOrigin(0.5);
-    
-    this.tweens.add({
-      targets: textObj,
-      y: textObj.y - 100,
-      alpha: 0,
-      duration: 1000,
-      onComplete: () => textObj.destroy()
-    });
-  }
+        // Botón Izquierda
+        const btnLeft = this.add.rectangle(-60, 0, 50, 50, 0x555555, 0.8).setStrokeStyle(2, 0xffffff);
+        const txtLeft = this.add.text(-60, 0, "←", { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
+        btnLeft.setInteractive();
+        btnLeft.on('pointerdown', () => { this.moveLeft = true; });
+        btnLeft.on('pointerup', () => { this.moveLeft = false; });
+        btnLeft.on('pointerout', () => { this.moveLeft = false; });
+
+        // Botón Derecha
+        const btnRight = this.add.rectangle(60, 0, 50, 50, 0x555555, 0.8).setStrokeStyle(2, 0xffffff);
+        const txtRight = this.add.text(60, 0, "→", { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
+        btnRight.setInteractive();
+        btnRight.on('pointerdown', () => { this.moveRight = true; });
+        btnRight.on('pointerup', () => { this.moveRight = false; });
+        btnRight.on('pointerout', () => { this.moveRight = false; });
+
+        // Botón Arriba
+        const btnUp = this.add.rectangle(0, -60, 50, 50, 0x555555, 0.8).setStrokeStyle(2, 0xffffff);
+        const txtUp = this.add.text(0, -60, "↑", { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
+        btnUp.setInteractive();
+        btnUp.on('pointerdown', () => { this.moveUp = true; });
+        btnUp.on('pointerup', () => { this.moveUp = false; });
+        btnUp.on('pointerout', () => { this.moveUp = false; });
+
+        // Botón Abajo
+        const btnDown = this.add.rectangle(0, 60, 50, 50, 0x555555, 0.8).setStrokeStyle(2, 0xffffff);
+        const txtDown = this.add.text(0, 60, "↓", { fontSize: '28px', fill: '#fff' }).setOrigin(0.5);
+        btnDown.setInteractive();
+        btnDown.on('pointerdown', () => { this.moveDown = true; });
+        btnDown.on('pointerup', () => { this.moveDown = false; });
+        btnDown.on('pointerout', () => { this.moveDown = false; });
+
+        controlContainer.add([btnLeft, txtLeft, btnRight, txtRight, btnUp, txtUp, btnDown, txtDown]);
+
+        // Botón de Ataque en la esquina inferior derecha
+        const attackContainer = this.add.container(this.cameras.main.width - 100, this.cameras.main.height - 100);
+        const btnAttack = this.add.rectangle(0, 0, 70, 70, 0xFF2222, 1).setStrokeStyle(2, 0xffffff);
+        const txtAttack = this.add.text(0, 0, "Ataque", { fontSize: '18px', fill: '#fff' }).setOrigin(0.5);
+        attackContainer.add([btnAttack, txtAttack]);
+        btnAttack.setInteractive();
+        btnAttack.on('pointerdown', () => { this.playerAttack(); });
+    }
+
+    update(time, delta) {
+        const acceleration = 600;
+        // Movimiento usando teclado o controles en pantalla
+        if (this.cursors.left.isDown || this.moveLeft) {
+            this.playerContainer.body.setAccelerationX(-acceleration);
+        } else if (this.cursors.right.isDown || this.moveRight) {
+            this.playerContainer.body.setAccelerationX(acceleration);
+        } else {
+            this.playerContainer.body.setAccelerationX(0);
+        }
+
+        if (this.cursors.up.isDown || this.moveUp) {
+            this.playerContainer.body.setAccelerationY(-acceleration);
+        } else if (this.cursors.down.isDown || this.moveDown) {
+            this.playerContainer.body.setAccelerationY(acceleration);
+        } else {
+            this.playerContainer.body.setAccelerationY(0);
+        }
+
+        // Revisar condiciones de victoria o derrota
+        if (this.opponentHealth <= 0) {
+            this.bgMusic.stop();
+            this.scene.start('EndScene', { winner: 'player' });
+        } else if (this.playerHealth <= 0) {
+            this.bgMusic.stop();
+            this.scene.start('EndScene', { winner: 'opponent' });
+        }
+
+        // Actualizar posición de los proyectiles para reflejar sus gráficos
+        this.playerBullets.getChildren().forEach(bullet => { if(bullet.update) bullet.update(); });
+        this.opponentBullets.getChildren().forEach(bullet => { if(bullet.update) bullet.update(); });
+    }
+
+    playerAttack() {
+        if (this.attackCooldown) return;
+        this.attackCooldown = true;
+        this.sound.play('attackSound');
+
+        // Crear proyectil del jugador
+        const bullet = this.playerBullets.create(this.playerContainer.x, this.playerContainer.y, null);
+        bullet.setSize(10, 10);
+        bullet.displayWidth = 10;
+        bullet.displayHeight = 10;
+        // Usamos un objeto gráfico para representar el proyectil
+        const graphics = this.add.graphics();
+        graphics.fillStyle(0xFFAA00, 1);
+        graphics.fillRect(0, 0, 10, 10);
+        bullet.graphics = graphics;
+        bullet.graphics.x = this.playerContainer.x;
+        bullet.graphics.y = this.playerContainer.y;
+
+        // Calcular dirección hacia el oponente y asignar velocidad
+        const direction = new Phaser.Math.Vector2(this.opponent.x - this.playerContainer.x, this.opponent.y - this.playerContainer.y).normalize();
+        bullet.body.velocity.x = direction.x * 400;
+        bullet.body.velocity.y = direction.y * 400;
+
+        // Actualizar la posición del gráfico en cada frame
+        bullet.update = () => {
+            bullet.graphics.x = bullet.x;
+            bullet.graphics.y = bullet.y;
+        };
+
+        // Destruir el proyectil después de 3 segundos
+        this.time.delayedCall(3000, () => {
+            if (bullet && bullet.graphics) {
+                bullet.graphics.destroy();
+            }
+            bullet.destroy();
+        }, [], this);
+
+        // Cooldown de ataque de 1 segundo
+        this.time.delayedCall(1000, () => {
+            this.attackCooldown = false;
+        }, [], this);
+    }
+
+    opponentAttack() {
+        this.sound.play('attackSound');
+        const bullet = this.opponentBullets.create(this.opponent.x, this.opponent.y, null);
+        bullet.setSize(10, 10);
+        bullet.displayWidth = 10;
+        bullet.displayHeight = 10;
+        const graphics = this.add.graphics();
+        graphics.fillStyle(0x00AAFF, 1);
+        graphics.fillRect(0, 0, 10, 10);
+        bullet.graphics = graphics;
+        bullet.graphics.x = this.opponent.x;
+        bullet.graphics.y = this.opponent.y;
+
+        // Disparo dirigido hacia el jugador
+        const direction = new Phaser.Math.Vector2(this.playerContainer.x - this.opponent.x, this.playerContainer.y - this.opponent.y).normalize();
+        bullet.body.velocity.x = direction.x * 400;
+        bullet.body.velocity.y = direction.y * 400;
+
+        bullet.update = () => {
+            bullet.graphics.x = bullet.x;
+            bullet.graphics.y = bullet.y;
+        };
+
+        this.time.delayedCall(3000, () => {
+            if (bullet && bullet.graphics) {
+                bullet.graphics.destroy();
+            }
+            bullet.destroy();
+        }, [], this);
+    }
+
+    hitOpponent(bullet, opponent) {
+        if(bullet.graphics) bullet.graphics.destroy();
+        bullet.destroy();
+        this.sound.play('collisionSound');
+        this.opponentHealth -= 20;
+        if (this.opponentHealth < 0) this.opponentHealth = 0;
+        this.registry.events.emit("updateHealth", { player: this.playerHealth, opponent: this.opponentHealth });
+    }
+
+    hitPlayer(bullet, player) {
+        if(bullet.graphics) bullet.graphics.destroy();
+        bullet.destroy();
+        this.sound.play('collisionSound');
+        this.playerHealth -= 20;
+        if (this.playerHealth < 0) this.playerHealth = 0;
+        this.registry.events.emit("updateHealth", { player: this.playerHealth, opponent: this.opponentHealth });
+    }
 }
