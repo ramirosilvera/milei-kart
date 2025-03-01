@@ -9,7 +9,7 @@ export default class GameScene extends Phaser.Scene {
             .setDisplaySize(this.cameras.main.width, this.cameras.main.height);
 
         // Música de fondo
-        this.bgMusic = this.sound.add('bgMusic', { loop: true, volume: 0.5 });
+        this.bgMusic = this.sound.add('bgMusic', { loop: true, volume: 0.1 });
         this.bgMusic.play();
 
         // Inicialización de salud y estado
@@ -24,7 +24,7 @@ export default class GameScene extends Phaser.Scene {
 
         // Crear contenedor del jugador (se reduce a 0.13, 1/3 de 0.4)
         this.playerContainer = this.add.container(this.cameras.main.centerX, this.cameras.main.height - 100);
-        this.playerSprite = this.add.sprite(0, 0, 'mileiKart').setScale(0.13);
+        this.playerSprite = this.add.sprite(0, 0, 'mileiKart').setScale(0.1);
         this.playerContainer.add(this.playerSprite);
         this.physics.world.enable(this.playerContainer);
         this.playerContainer.body.setCollideWorldBounds(true);
@@ -32,7 +32,7 @@ export default class GameScene extends Phaser.Scene {
         this.playerContainer.body.setMaxVelocity(300);
 
         // Crear sprite del oponente (se reduce a 0.13 también)
-        this.opponent = this.physics.add.sprite(this.cameras.main.centerX, 100, 'opponentKart').setScale(0.13);
+        this.opponent = this.physics.add.sprite(this.cameras.main.centerX, 100, 'opponentKart').setScale(0.1);
         this.opponent.body.setCollideWorldBounds(true);
         this.opponent.body.setBounce(1, 0);
         this.opponent.body.setVelocityX(100);
@@ -229,7 +229,7 @@ export default class GameScene extends Phaser.Scene {
         const x = Phaser.Math.Between(100, this.cameras.main.width - 100);
         const y = Phaser.Math.Between(150, this.cameras.main.height - 150);
         // En este caso, los power-ups se agrandan x3 (escala 1.2)
-        const powerUp = this.powerUps.create(x, y, type).setScale(1.2);
+        const powerUp = this.powerUps.create(x, y, type).setScale(0.8);
         // Guardamos el tween para poder detenerlo al recoger el power-up
         powerUp.tween = this.tweens.add({
             targets: powerUp,
