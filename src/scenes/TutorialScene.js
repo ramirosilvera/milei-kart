@@ -4,108 +4,68 @@ class TutorialScene extends Phaser.Scene {
   }
 
   create() {
-    // Fondo estilo mitin político con pantalla gigante
-    this.add.image(0, 0, 'menuBg').setOrigin(0).setDisplaySize(GAME_WIDTH, GAME_HEIGHT)
-      .setTint(0xff0000); // Tinte rojo de alerta
+    const { width, height } = this.scale;
 
-    // Efecto de multitud animada (requiere asset)
-    const crowd = this.add.sprite(0, GAME_HEIGHT - 100, 'crowd')
-      .setOrigin(0)
-      .play('crowdCheer');
-    crowd.setScale(2.5);
+    // Fondo minimalista
+    this.add.image(width/2, height/2, 'menuBg')
+      .setDisplaySize(width, height)
+      .setTint(0x1a1a1a);
 
-    const tutorialContainer = this.add.container(GAME_WIDTH / 2, GAME_HEIGHT / 2);
+    // Contenedor principal
+    const tutorialBox = this.add.container(width/2, height/2);
+    
+    // Marco estilo informe de gobierno
+    const frame = this.add.graphics()
+      .fillStyle(0x2d2d2d, 0.95)
+      .fillRoundedRect(-350, -200, 700, 400, 15)
+      .lineStyle(3, 0xff4444)
+      .strokeRoundedRect(-350, -200, 700, 400, 15);
+    tutorialBox.add(frame);
 
-    // Marco estilo pancarta de protesta
-    const tutBg = this.add.graphics();
-    tutBg.fillStyle(0x000000, 0.85);
-    tutBg.fillRoundedRect(-400, -250, 800, 500, 30);
-    tutBg.lineStyle(5, 0xffd700);
-    tutBg.strokeRoundedRect(-400, -250, 800, 500, 30);
-    tutorialContainer.add(tutBg);
-
-    // Título estilo propaganda política
-    const title = this.add.text(0, -230, 'MANUAL DEL BUEN POPULISTA DIGITAL', { 
-      fontSize: '28px', 
-      fill: '#ff2222', 
-      fontFamily: 'Impact',
-      stroke: '#ffffff',
-      strokeThickness: 3
-    }).setOrigin(0.5);
-    tutorialContainer.add(title);
-
-    // Controles con analogías políticas
-    const instructions = this.add.text(-350, -180, 
-      "🚗 CONTROLES DEL RELATO 🚗\n\n" +
-      "◀️ ▶️  Girar la narrativa (según convenga)\n" +
-      "🔼 Acelerar la máquina de fake news\n" +
-      "🔽 Frenar la oposición\n" +
-      "💥 Botón de crisis: Crear cortina de humo\n\n" +
-      "🎯 OBJETIVO HEGEMÓNICO:\n" +
-      "• Reducir la SALUD DEMOCRÁTICA de 100 a 0\n" +
-      "• Mantener tu POPULARIDAD arriba con memes\n\n" +
-      "⚠️ PELIGROS EN LA PISTA:\n" +
-      "• Periodistas independientes (restan 20% de relato)\n" +
-      "• Datos de inflación reales (daño crítico)\n" +
-      "• Audios filtrados (¡congelan tu cuenta 5 segundos!)\n\n" +
-      "💎 POWER-UPS DEL SISTEMA:\n" +
-      "• Dolarización mágica (+50 credibilidad)\n" +
-      "• Alianza con influencers (+30 velocidad)\n" +
-      "• Victimización (escudo temporal)",
-      { 
-        fontSize: '16px', 
-        fill: '#fff', 
-        wordWrap: { width: 750 },
-        lineSpacing: 6
+    // Instrucciones clave
+    const content = this.add.text(0, -150, 
+      "🔥 MANUAL DE SUPREMACÍA NARRATIVA 🔥\n\n" +
+      "▸ Usa ←→ para girar escándalos a tu favor\n" +
+      "▸ ↑ Acelera la máquina de fake news\n" +
+      "▸ ↓ Silencia datos económicos incómodos\n\n" +
+      "💣 POWER-UPS CLAVE:\n" +
+      "• Cortinas de humo (desvío de atención)\n" +
+      "• Dolarización express (congela precios)\n" +
+      "• Bots oficialistas (ataque a opositores)\n\n" +
+      "⚠️ AMENAZAS:\n" +
+      "• Datos reales (-30% credibilidad)\n" +
+      "• Filtraciones explosivas (-50% apoyo)",
+      {
+        fontSize: '20px',
+        fill: '#f0f0f0',
+        align: 'center',
+        lineSpacing: 8,
+        wordWrap: { width: 650 }
       }
-    );
-    tutorialContainer.add(instructions);
+    ).setOrigin(0.5);
+    tutorialBox.add(content);
 
-    // Indicador estilo "Estado de la Nación"
-    const economyMeter = this.add.graphics()
-      .fillStyle(0x00ff00, 1)
-      .fillRect(-100, 190, 200, 15)
-      .lineStyle(2, 0xffffff)
-      .strokeRect(-100, 190, 200, 15);
-    tutorialContainer.add(economyMeter);
-    const economyText = this.add.text(0, 175, 'ESTABILIDAD ECONÓMICA', {
-      fontSize: '14px',
-      fill: '#ffff00'
-    }).setOrigin(0.5);
-    tutorialContainer.add(economyText);
-
-    // Botón estilo llamado a la acción política
-    const startBtn = this.add.text(0, 220, '[ DECRETAR EMERGENCIA Y COMENZAR ]', {
-      fontSize: '22px',
-      fill: '#00ff00',
-      fontStyle: 'bold',
-      backgroundColor: '#000000',
-      padding: { x: 20, y: 10 }
-    }).setOrigin(0.5);
-    startBtn.setInteractive({ useHandCursor: true })
-      .on('pointerover', () => startBtn.setScale(1.1))
+    // Botón verificado con transición
+    const startBtn = this.add.text(0, 140, '[ ACTIVAR PROTOCOLO DE SHOCK ]', {
+      fontSize: '24px',
+      fill: '#FFFFFF',
+      backgroundColor: '#B71C1C',
+      padding: { x: 25, y: 10 },
+      borderRadius: 6
+    }).setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerover', () => startBtn.setScale(1.05))
       .on('pointerout', () => startBtn.setScale(1))
       .on('pointerdown', () => {
         this.sound.play('menuSelect');
-        this.scene.start('GameScene');
+        this.scene.start('GameScene'); // Llamado confirmado
       });
-    tutorialContainer.add(startBtn);
+    tutorialBox.add(startBtn);
 
-    // Efectos adicionales
-    this.add.text(50, 50, "VERSIÓN BETA\n(sujeta a ajustes)", {
-      fontSize: '18px',
-      fill: '#ff0000',
-      rotation: -0.2
-    });
-    
-    // Animación de "recorte presupuestario" en el medidor
-    this.tweens.add({
-      targets: economyMeter,
-      scaleX: 0.3,
-      duration: 2000,
-      ease: 'Sine.easeInOut',
-      yoyo: true,
-      repeat: -1
-    });
+    // Indicador de realidad
+    this.add.text(width/2, height - 40, 
+      "* Los indicadores se actualizan según el relato oficial",
+      { fontSize: '14px', fill: '#888', fontStyle: 'italic' }
+    ).setOrigin(0.5);
   }
 }
