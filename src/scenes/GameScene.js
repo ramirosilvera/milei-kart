@@ -8,25 +8,31 @@ export default class GameScene extends Phaser.Scene {
         this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'track')
             .setDisplaySize(this.cameras.main.width, this.cameras.main.height);
 
-        // Reproducir música de fondo
+        // Música de fondo
         this.bgMusic = this.sound.add('bgMusic', { loop: true, volume: 0.5 });
         this.bgMusic.play();
 
-        // Inicializar salud
+        // Inicialización de salud y estado
         this.playerHealth = 100;
         this.opponentHealth = 100;
+        this.attackCooldown = false;
+        this.playerBoostAttack = false;
+        this.playerStatus = { shield: false };
 
-        // Crear contenedor del jugador y habilitar física
+        // Grupo para power-ups
+        this.powerUps = this.physics.add.group();
+
+        // Crear contenedor del jugador (reduce escala a 0.4)
         this.playerContainer = this.add.container(this.cameras.main.centerX, this.cameras.main.height - 100);
-        this.playerSprite = this.add.sprite(0, 0, 'mileiKart').setScale(0.5);
+        this.playerSprite = this.add.sprite(0, 0, 'mileiKart').setScale(0.4);
         this.playerContainer.add(this.playerSprite);
         this.physics.world.enable(this.playerContainer);
         this.playerContainer.body.setCollideWorldBounds(true);
         this.playerContainer.body.setDrag(600, 600);
         this.playerContainer.body.setMaxVelocity(300);
 
-        // Crear sprite del oponente con IA simple
-        this.opponent = this.physics.add.sprite(this.cameras.main.centerX, 100, 'opponentKart').setScale(0.5);
+        // Crear sprite del oponente (escala 0.4)
+        this.opponent = this.physics.add.sprite(this.cameras.main.centerX, 100, 'opponentKart').setScale(0.4);
         this.opponent.body.setCollideWorldBounds(true);
         this.opponent.body.setBounce(1, 0);
         this.opponent.body.setVelocityX(100);
@@ -35,24 +41,26 @@ export default class GameScene extends Phaser.Scene {
         this.playerBullets = this.physics.add.group();
         this.opponentBullets = this.physics.add.group();
 
-        // Colisiones entre proyectiles y karts
+        // Colisiones de proyectiles
         this.physics.add.overlap(this.playerBullets, this.opponent, this.hitOpponent, null, this);
         this.physics.add.overlap(this.opponentBullets, this.playerContainer, this.hitPlayer, null, this);
 
-        // Configurar controles de teclado
+        // Colisión para recoger power-ups
+        this.physics.add.overlap(this.playerContainer, this.powerUps, this.collectPowerUp, null, this);
+
+        // Configuración de controles de teclado
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // Variables para controles en pantalla
+        // Variables para controles táctiles
         this.moveLeft = false;
         this.moveRight = false;
         this.moveUp = false;
         this.moveDown = false;
-        this.attackCooldown = false;
 
-        // Crear botones en pantalla (direccionales y de ataque)
+        // Crear controles en pantalla
         this.createOnScreenControls();
 
-        // Temporizador para ataques del oponente
+        // Temporizador para ataques del oponente cada 2 segundos
         this.time.addEvent({
             delay: 2000,
             callback: this.opponentAttack,
@@ -60,12 +68,20 @@ export default class GameScene extends Phaser.Scene {
             loop: true
         });
 
-        // Emitir estado inicial de salud para la UI
+        // Temporizador para spawn de power-ups cada 8 segundos
+        this.time.addEvent({
+            delay: 8000,
+            callback: this.spawnPowerUp,
+            callbackScope: this,
+            loop: true
+        });
+
+        // Actualizar la UI de salud
         this.registry.events.emit("updateHealth", { player: this.playerHealth, opponent: this.opponentHealth });
     }
 
     createOnScreenControls() {
-        // Contenedor de controles direccionales en la esquina inferior izquierda
+        // Controles direccionales (esquina inferior izquierda)
         const controlContainer = this.add.container(100, this.cameras.main.height - 100);
 
         // Botón Izquierda
@@ -102,7 +118,7 @@ export default class GameScene extends Phaser.Scene {
 
         controlContainer.add([btnLeft, txtLeft, btnRight, txtRight, btnUp, txtUp, btnDown, txtDown]);
 
-        // Botón de Ataque en la esquina inferior derecha
+        // Botón de Ataque (esquina inferior derecha)
         const attackContainer = this.add.container(this.cameras.main.width - 100, this.cameras.main.height - 100);
         const btnAttack = this.add.rectangle(0, 0, 70, 70, 0xFF2222, 1).setStrokeStyle(2, 0xffffff);
         const txtAttack = this.add.text(0, 0, "Ataque", { fontSize: '18px', fill: '#fff' }).setOrigin(0.5);
@@ -111,9 +127,9 @@ export default class GameScene extends Phaser.Scene {
         btnAttack.on('pointerdown', () => { this.playerAttack(); });
     }
 
-    update(time, delta) {
+    update() {
         const acceleration = 600;
-        // Movimiento usando teclado o controles en pantalla
+        // Movimiento: teclado o controles táctiles
         if (this.cursors.left.isDown || this.moveLeft) {
             this.playerContainer.body.setAccelerationX(-acceleration);
         } else if (this.cursors.right.isDown || this.moveRight) {
@@ -130,7 +146,7 @@ export default class GameScene extends Phaser.Scene {
             this.playerContainer.body.setAccelerationY(0);
         }
 
-        // Revisar condiciones de victoria o derrota
+        // Comprobar condiciones de victoria/derrota
         if (this.opponentHealth <= 0) {
             this.bgMusic.stop();
             this.scene.start('EndScene', { winner: 'player' });
@@ -138,14 +154,10 @@ export default class GameScene extends Phaser.Scene {
             this.bgMusic.stop();
             this.scene.start('EndScene', { winner: 'opponent' });
         }
-
-        // Actualizar posición de los proyectiles para reflejar sus gráficos
-        this.playerBullets.getChildren().forEach(bullet => { if(bullet.update) bullet.update(); });
-        this.opponentBullets.getChildren().forEach(bullet => { if(bullet.update) bullet.update(); });
     }
 
     playerAttack() {
-        if (this.attackCooldown) return;
+        if (this.attackCooldown && !this.playerBoostAttack) return;
         this.attackCooldown = true;
         this.sound.play('attackSound');
 
@@ -154,7 +166,7 @@ export default class GameScene extends Phaser.Scene {
         bullet.setSize(10, 10);
         bullet.displayWidth = 10;
         bullet.displayHeight = 10;
-        // Usamos un objeto gráfico para representar el proyectil
+        // Representación gráfica del proyectil
         const graphics = this.add.graphics();
         graphics.fillStyle(0xFFAA00, 1);
         graphics.fillRect(0, 0, 10, 10);
@@ -162,26 +174,21 @@ export default class GameScene extends Phaser.Scene {
         bullet.graphics.x = this.playerContainer.x;
         bullet.graphics.y = this.playerContainer.y;
 
-        // Calcular dirección hacia el oponente y asignar velocidad
+        // Calcular dirección hacia el oponente
         const direction = new Phaser.Math.Vector2(this.opponent.x - this.playerContainer.x, this.opponent.y - this.playerContainer.y).normalize();
         bullet.body.velocity.x = direction.x * 400;
         bullet.body.velocity.y = direction.y * 400;
 
-        // Actualizar la posición del gráfico en cada frame
         bullet.update = () => {
             bullet.graphics.x = bullet.x;
             bullet.graphics.y = bullet.y;
         };
 
-        // Destruir el proyectil después de 3 segundos
         this.time.delayedCall(3000, () => {
-            if (bullet && bullet.graphics) {
-                bullet.graphics.destroy();
-            }
+            if (bullet && bullet.graphics) { bullet.graphics.destroy(); }
             bullet.destroy();
         }, [], this);
 
-        // Cooldown de ataque de 1 segundo
         this.time.delayedCall(1000, () => {
             this.attackCooldown = false;
         }, [], this);
@@ -200,7 +207,6 @@ export default class GameScene extends Phaser.Scene {
         bullet.graphics.x = this.opponent.x;
         bullet.graphics.y = this.opponent.y;
 
-        // Disparo dirigido hacia el jugador
         const direction = new Phaser.Math.Vector2(this.playerContainer.x - this.opponent.x, this.playerContainer.y - this.opponent.y).normalize();
         bullet.body.velocity.x = direction.x * 400;
         bullet.body.velocity.y = direction.y * 400;
@@ -211,15 +217,65 @@ export default class GameScene extends Phaser.Scene {
         };
 
         this.time.delayedCall(3000, () => {
-            if (bullet && bullet.graphics) {
-                bullet.graphics.destroy();
-            }
+            if (bullet && bullet.graphics) { bullet.graphics.destroy(); }
             bullet.destroy();
         }, [], this);
     }
 
+    spawnPowerUp() {
+        // Array de tipos de power-up
+        const types = ['powerUpDesinformation', 'powerUpRetuits', 'powerUpShield', 'powerUpHostigamiento'];
+        const type = Phaser.Utils.Array.GetRandom(types);
+        // Posición aleatoria en la pista (evitando bordes)
+        const x = Phaser.Math.Between(100, this.cameras.main.width - 100);
+        const y = Phaser.Math.Between(150, this.cameras.main.height - 150);
+        const powerUp = this.powerUps.create(x, y, type).setScale(0.4);
+        // Animación de rebote (tween)
+        this.tweens.add({
+            targets: powerUp,
+            y: powerUp.y - 20,
+            yoyo: true,
+            repeat: -1,
+            duration: 800,
+            ease: 'Sine.easeInOut'
+        });
+    }
+
+    collectPowerUp(player, powerUp) {
+        this.sound.play('itemPickup');
+        const type = powerUp.texture.key;
+        powerUp.destroy();
+
+        switch(type) {
+            case 'powerUpDesinformation':
+                // Ralentizar al oponente durante 5 segundos
+                this.opponent.body.velocity.x *= 0.5;
+                this.time.delayedCall(5000, () => { this.opponent.body.velocity.x *= 2; }, [], this);
+                break;
+            case 'powerUpRetuits':
+                // Permitir atacar sin cooldown durante 5 segundos
+                this.playerBoostAttack = true;
+                this.time.delayedCall(5000, () => { this.playerBoostAttack = false; }, [], this);
+                break;
+            case 'powerUpShield':
+                // Otorgar un escudo que absorbe un golpe
+                this.playerStatus.shield = true;
+                if (!this.shieldSprite) {
+                    this.shieldSprite = this.add.circle(0, 0, 45, 0x00FF00, 0.3);
+                    this.playerContainer.add(this.shieldSprite);
+                }
+                break;
+            case 'powerUpHostigamiento':
+                // Desatar una ráfaga de 5 ataques consecutivos
+                for (let i = 0; i < 5; i++) {
+                    this.time.delayedCall(i * 200, () => { this.playerAttack(); }, [], this);
+                }
+                break;
+        }
+    }
+
     hitOpponent(bullet, opponent) {
-        if(bullet.graphics) bullet.graphics.destroy();
+        if (bullet.graphics) bullet.graphics.destroy();
         bullet.destroy();
         this.sound.play('collisionSound');
         this.opponentHealth -= 20;
@@ -228,11 +284,17 @@ export default class GameScene extends Phaser.Scene {
     }
 
     hitPlayer(bullet, player) {
-        if(bullet.graphics) bullet.graphics.destroy();
+        if (bullet.graphics) bullet.graphics.destroy();
         bullet.destroy();
-        this.sound.play('collisionSound');
-        this.playerHealth -= 20;
-        if (this.playerHealth < 0) this.playerHealth = 0;
-        this.registry.events.emit("updateHealth", { player: this.playerHealth, opponent: this.opponentHealth });
+        // Si el jugador tiene escudo, se absorbe el golpe
+        if (this.playerStatus.shield) {
+            this.playerStatus.shield = false;
+            if (this.shieldSprite) { this.shieldSprite.destroy(); this.shieldSprite = null; }
+        } else {
+            this.sound.play('collisionSound');
+            this.playerHealth -= 20;
+            if (this.playerHealth < 0) this.playerHealth = 0;
+            this.registry.events.emit("updateHealth", { player: this.playerHealth, opponent: this.opponentHealth });
+        }
     }
 }
