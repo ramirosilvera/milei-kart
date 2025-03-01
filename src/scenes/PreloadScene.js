@@ -12,18 +12,18 @@ export default class PreloadScene extends Phaser.Scene {
         }).setOrigin(0.5);
         loadingContainer.add([loadingBg, loadingText]);
 
-        // Cargamos imágenes
+        // Imágenes del juego
         this.load.image('menuBackground', 'assets/images/menu_background.png');
         this.load.image('track', 'assets/images/track_background.png');
         this.load.image('mileiKart', 'assets/images/milei_kart.png');
         this.load.image('opponentKart', 'assets/images/opponent_kart.png');
-        // (Se siguen cargando power-ups aunque en este modo de combate no se usan)
+        // Power-ups
         this.load.image('powerUpDesinformation', 'assets/images/power_up_desinformation.png');
         this.load.image('powerUpRetuits', 'assets/images/power_up_retuits.png');
         this.load.image('powerUpShield', 'assets/images/power_up_shield.png');
         this.load.image('powerUpHostigamiento', 'assets/images/power_up_hostigamiento.png');
 
-        // Cargamos sonidos
+        // Sonidos
         this.load.audio('bgMusic', 'assets/sounds/background_music.mp3');
         this.load.audio('itemPickup', 'assets/sounds/item_pickup.wav');
         this.load.audio('attackSound', 'assets/sounds/attack_sound.wav');
