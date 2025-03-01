@@ -22,7 +22,7 @@ export default class GameScene extends Phaser.Scene {
         // Grupo para power-ups
         this.powerUps = this.physics.add.group();
 
-        // Crear contenedor del jugador (karts reducidos a scale 0.1)
+        // Crear contenedor del jugador (karts con scale 0.1)
         this.playerContainer = this.add.container(this.cameras.main.centerX, this.cameras.main.height - 100);
         this.playerSprite = this.add.sprite(0, 0, 'mileiKart').setScale(0.1);
         this.playerContainer.add(this.playerSprite);
@@ -47,7 +47,7 @@ export default class GameScene extends Phaser.Scene {
         // Colisión para recoger power-ups
         this.physics.add.overlap(this.playerContainer, this.powerUps, this.collectPowerUp, null, this);
 
-        // Controles de teclado
+        // Configuración de controles de teclado
         this.cursors = this.input.keyboard.createCursorKeys();
 
         // Variables para controles táctiles
@@ -58,6 +58,9 @@ export default class GameScene extends Phaser.Scene {
 
         // Crear controles en pantalla (botones direccionales y de ataque)
         this.createOnScreenControls();
+
+        // Lanzar la interfaz de usuario para que aparezca la barra de salud
+        this.scene.launch("UIScene");
 
         // Ataques automáticos del oponente cada 2 segundos
         this.time.addEvent({
@@ -128,6 +131,7 @@ export default class GameScene extends Phaser.Scene {
 
     update() {
         const acceleration = 600;
+        // Movimiento por teclado o controles táctiles
         if (this.cursors.left.isDown || this.moveLeft) {
             this.playerContainer.body.setAccelerationX(-acceleration);
         } else if (this.cursors.right.isDown || this.moveRight) {
@@ -142,6 +146,7 @@ export default class GameScene extends Phaser.Scene {
         } else {
             this.playerContainer.body.setAccelerationY(0);
         }
+        // Verificar condiciones de victoria/derrota
         if (this.opponentHealth <= 0) {
             this.bgMusic.stop();
             this.scene.start('EndScene', { winner: 'player' });
@@ -156,7 +161,7 @@ export default class GameScene extends Phaser.Scene {
         this.attackCooldown = true;
         this.sound.play('attackSound');
 
-        // Crear proyectil del jugador (agrandado, tamaño 20)
+        // Crear proyectil del jugador (agrandado a tamaño 20)
         const bullet = this.playerBullets.create(this.playerContainer.x, this.playerContainer.y, null);
         bullet.setSize(20, 20);
         bullet.displayWidth = 20;
@@ -169,7 +174,7 @@ export default class GameScene extends Phaser.Scene {
         bullet.graphics.x = this.playerContainer.x;
         bullet.graphics.y = this.playerContainer.y;
 
-        // Efecto divertido: tween de pulsación (sube y baja de escala)
+        // Efecto de pulsación
         this.tweens.add({
             targets: bullet.graphics,
             scaleX: { from: 1, to: 1.3 },
@@ -179,7 +184,10 @@ export default class GameScene extends Phaser.Scene {
             duration: 300
         });
 
-        const direction = new Phaser.Math.Vector2(this.opponent.x - this.playerContainer.x, this.opponent.y - this.playerContainer.y).normalize();
+        const direction = new Phaser.Math.Vector2(
+            this.opponent.x - this.playerContainer.x,
+            this.opponent.y - this.playerContainer.y
+        ).normalize();
         bullet.body.velocity.x = direction.x * 500;
         bullet.body.velocity.y = direction.y * 500;
 
@@ -220,7 +228,10 @@ export default class GameScene extends Phaser.Scene {
             duration: 300
         });
 
-        const direction = new Phaser.Math.Vector2(this.playerContainer.x - this.opponent.x, this.playerContainer.y - this.opponent.y).normalize();
+        const direction = new Phaser.Math.Vector2(
+            this.playerContainer.x - this.opponent.x,
+            this.playerContainer.y - this.opponent.y
+        ).normalize();
         bullet.body.velocity.x = direction.x * 500;
         bullet.body.velocity.y = direction.y * 500;
 
@@ -258,7 +269,7 @@ export default class GameScene extends Phaser.Scene {
         const type = powerUp.texture.key;
         powerUp.destroy();
 
-        switch(type) {
+        switch (type) {
             case 'powerUpDesinformation':
                 this.opponent.body.velocity.x *= 0.5;
                 this.time.delayedCall(5000, () => { this.opponent.body.velocity.x *= 2; }, [], this);
@@ -283,10 +294,11 @@ export default class GameScene extends Phaser.Scene {
     }
 
     hitOpponent(bullet, opponent) {
+        if (!bullet.active) return;
+        if (bullet.getData("processed")) return;
+        bullet.setData("processed", true);
         if (bullet.graphics) bullet.graphics.destroy();
-        // Desactivar el cuerpo del proyectil para evitar múltiples colisiones
         bullet.disableBody(true, true);
-        bullet.destroy();
         this.sound.play('collisionSound');
         this.opponentHealth -= 20;
         if (this.opponentHealth < 0) this.opponentHealth = 0;
@@ -294,9 +306,11 @@ export default class GameScene extends Phaser.Scene {
     }
 
     hitPlayer(bullet, player) {
+        if (!bullet.active) return;
+        if (bullet.getData("processed")) return;
+        bullet.setData("processed", true);
         if (bullet.graphics) bullet.graphics.destroy();
         bullet.disableBody(true, true);
-        bullet.destroy();
         if (this.playerStatus.shield) {
             this.playerStatus.shield = false;
             if (this.shieldSprite) { this.shieldSprite.destroy(); this.shieldSprite = null; }
