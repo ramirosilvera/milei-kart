@@ -146,7 +146,7 @@ export default class GameScene extends Phaser.Scene {
         } else {
             this.playerContainer.body.setAccelerationY(0);
         }
-        // Verificar condiciones de victoria/derrota
+        // Condiciones de victoria/derrota
         if (this.opponentHealth <= 0) {
             this.bgMusic.stop();
             this.scene.start('EndScene', { winner: 'player' });
@@ -161,12 +161,12 @@ export default class GameScene extends Phaser.Scene {
         this.attackCooldown = true;
         this.sound.play('attackSound');
 
-        // Crear proyectil del jugador (agrandado a tamaño 20)
+        // Crear proyectil del jugador (tamaño 20) y asignar "processed" inicial
         const bullet = this.playerBullets.create(this.playerContainer.x, this.playerContainer.y, null);
+        bullet.setData("processed", false);
         bullet.setSize(20, 20);
         bullet.displayWidth = 20;
         bullet.displayHeight = 20;
-        // Representar el proyectil como un círculo brillante
         const graphics = this.add.graphics();
         graphics.fillStyle(0xFFAA00, 1);
         graphics.fillCircle(10, 10, 10);
@@ -198,7 +198,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.time.delayedCall(3000, () => {
             if (bullet && bullet.graphics) { bullet.graphics.destroy(); }
-            bullet.destroy();
+            if (bullet && bullet.active) { bullet.destroy(); }
         }, [], this);
 
         this.time.delayedCall(1000, () => {
@@ -209,6 +209,7 @@ export default class GameScene extends Phaser.Scene {
     opponentAttack() {
         this.sound.play('attackSound');
         const bullet = this.opponentBullets.create(this.opponent.x, this.opponent.y, null);
+        bullet.setData("processed", false);
         bullet.setSize(20, 20);
         bullet.displayWidth = 20;
         bullet.displayHeight = 20;
@@ -242,7 +243,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.time.delayedCall(3000, () => {
             if (bullet && bullet.graphics) { bullet.graphics.destroy(); }
-            bullet.destroy();
+            if (bullet && bullet.active) { bullet.destroy(); }
         }, [], this);
     }
 
@@ -299,6 +300,7 @@ export default class GameScene extends Phaser.Scene {
         bullet.setData("processed", true);
         if (bullet.graphics) bullet.graphics.destroy();
         bullet.disableBody(true, true);
+        bullet.destroy();
         this.sound.play('collisionSound');
         this.opponentHealth -= 20;
         if (this.opponentHealth < 0) this.opponentHealth = 0;
@@ -311,6 +313,7 @@ export default class GameScene extends Phaser.Scene {
         bullet.setData("processed", true);
         if (bullet.graphics) bullet.graphics.destroy();
         bullet.disableBody(true, true);
+        bullet.destroy();
         if (this.playerStatus.shield) {
             this.playerStatus.shield = false;
             if (this.shieldSprite) { this.shieldSprite.destroy(); this.shieldSprite = null; }
