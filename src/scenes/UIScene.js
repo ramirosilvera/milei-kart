@@ -4,19 +4,35 @@ export default class UIScene extends Phaser.Scene {
     }
 
     create() {
-        // Crear un contenedor para la UI
+        // Crear un contenedor para la UI que no se mueva (scroll fijo)
         this.uiContainer = this.add.container(0, 0);
-
+        
         // Barra de salud del jugador (esquina superior izquierda)
-        const playerHealthBg = this.add.rectangle(50, 20, 250, 40, 0x000000, 0.7).setOrigin(0);
-        const playerHealthBar = this.add.rectangle(50, 20, 250, 40, 0x00FF00).setOrigin(0);
-        const playerHealthText = this.add.text(60, 25, "Jugador: 100", { fontSize: '24px', fill: '#FFFFFF', fontStyle: 'bold' });
+        const playerHealthBg = this.add.rectangle(50, 20, 250, 40, 0x000000, 0.7)
+            .setOrigin(0)
+            .setScrollFactor(0);
+        const playerHealthBar = this.add.rectangle(50, 20, 250, 40, 0x00FF00)
+            .setOrigin(0)
+            .setScrollFactor(0);
+        const playerHealthText = this.add.text(60, 25, "Jugador: 100", {
+            fontSize: '24px',
+            fill: '#FFFFFF',
+            fontStyle: 'bold'
+        }).setScrollFactor(0);
         this.uiContainer.add([playerHealthBg, playerHealthBar, playerHealthText]);
 
         // Barra de salud del oponente (esquina superior derecha)
-        const opponentHealthBg = this.add.rectangle(this.cameras.main.width - 300, 20, 250, 40, 0x000000, 0.7).setOrigin(0);
-        const opponentHealthBar = this.add.rectangle(this.cameras.main.width - 300, 20, 250, 40, 0xFF0000).setOrigin(0);
-        const opponentHealthText = this.add.text(this.cameras.main.width - 290, 25, "Oponente: 100", { fontSize: '24px', fill: '#FFFFFF', fontStyle: 'bold' });
+        const opponentHealthBg = this.add.rectangle(this.cameras.main.width - 300, 20, 250, 40, 0x000000, 0.7)
+            .setOrigin(0)
+            .setScrollFactor(0);
+        const opponentHealthBar = this.add.rectangle(this.cameras.main.width - 300, 20, 250, 40, 0xFF0000)
+            .setOrigin(0)
+            .setScrollFactor(0);
+        const opponentHealthText = this.add.text(this.cameras.main.width - 290, 25, "Oponente: 100", {
+            fontSize: '24px',
+            fill: '#FFFFFF',
+            fontStyle: 'bold'
+        }).setScrollFactor(0);
         this.uiContainer.add([opponentHealthBg, opponentHealthBar, opponentHealthText]);
 
         // Guardar referencias para actualizar la UI
@@ -25,7 +41,7 @@ export default class UIScene extends Phaser.Scene {
         this.opponentHealthBar = opponentHealthBar;
         this.opponentHealthText = opponentHealthText;
 
-        // Escuchar el evento de actualización de salud
+        // Escuchar el evento para actualizar la salud
         this.registry.events.on("updateHealth", (data) => {
             const playerWidth = (data.player / 100) * 250;
             this.playerHealthBar.width = playerWidth;
