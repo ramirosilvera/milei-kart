@@ -11,15 +11,12 @@ export default class EndScene extends Phaser.Scene {
         // Fondo oscuro semi-transparente
         this.add.rectangle(this.cameras.main.centerX, this.cameras.main.centerY, this.cameras.main.width, this.cameras.main.height, 0x000000, 0.7);
 
-        // Contenedor de la pantalla final
+        // Contenedor de fin de juego
         const endContainer = this.add.container(this.cameras.main.centerX, this.cameras.main.centerY);
         const containerBg = this.add.rectangle(0, 0, 600, 300, 0x111111, 0.8);
-        let endMessage = "";
-        if (this.winner === "player") {
-            endMessage = "¡Felicidades! Has destruido el kart opositor.";
-        } else {
-            endMessage = "¡Tu kart ha sido destruido! La oposición triunfa.";
-        }
+        let endMessage = (this.winner === "player") ?
+            "¡Felicidades! Has destruido el kart opositor." :
+            "¡Tu kart ha sido destruido! La oposición triunfa.";
         const endText = this.add.text(0, -80, "Fin de la Carrera", {
             fontSize: '36px',
             fill: '#FFD700',
@@ -39,7 +36,6 @@ export default class EndScene extends Phaser.Scene {
 
         endContainer.add([containerBg, endText, resultText, restartButtonBg, restartButtonText]);
 
-        // Interactividad del botón para reiniciar la partida
         restartButtonBg.setInteractive({ useHandCursor: true });
         restartButtonBg.on('pointerdown', () => {
             this.sound.play('menuSelect');
