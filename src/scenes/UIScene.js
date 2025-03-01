@@ -15,7 +15,6 @@ export default class UIScene extends Phaser.Scene {
         this.opponentHealthText = this.add.text(this.cameras.main.width - 210, 25, "Oponente: 100", { fontSize: '20px', fill: '#fff' });
 
         this.registry.events.on("updateHealth", (data) => {
-            // Actualizar la anchura de la barra proporcional a la salud (valor máximo 100)
             const playerWidth = (data.player / 100) * 200;
             this.playerHealthBar.width = playerWidth;
             this.playerHealthText.setText("Jugador: " + data.player);
