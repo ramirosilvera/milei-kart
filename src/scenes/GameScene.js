@@ -35,6 +35,9 @@ export default class GameScene extends Phaser.Scene {
             moveUp: false,
             moveDown: false
         };
+
+        // Flag para evitar múltiples llamadas a fin de juego
+        this.gameOver = false;
     }
 
     setupPhysics() {
@@ -99,13 +102,12 @@ export default class GameScene extends Phaser.Scene {
     }
 
     setupControls() {
-        // Controles táctiles mejorados con animaciones
+        // Controles táctiles mejorados con nueva ubicación y animaciones
         const createButton = (x, y, text, action) => {
             const btn = this.add.rectangle(x, y, 60, 60, 0x333333, 0.8)
                 .setStrokeStyle(2, 0xffffff)
                 .setInteractive();
 
-            // Animación al presionar
             btn.on('pointerdown', () => {
                 this.gameState[action] = true;
                 this.tweens.add({
@@ -138,14 +140,15 @@ export default class GameScene extends Phaser.Scene {
                 .setOrigin(0.5);
         };
 
-        // Botones direccionales
-        createButton(80, this.cameras.main.height - 180, '←', 'moveLeft');
-        createButton(160, this.cameras.main.height - 100, '→', 'moveRight');
-        createButton(80, this.cameras.main.height - 20, '↓', 'moveDown');
-        createButton(20, this.cameras.main.height - 100, '↑', 'moveUp');
+        // Nueva ubicación para botones de dirección (D-pad)
+        // ↑: (100, height - 140), ←: (60, height - 100), ↓: (100, height - 60), →: (140, height - 100)
+        createButton(60, this.cameras.main.height - 100, '←', 'moveLeft');
+        createButton(140, this.cameras.main.height - 100, '→', 'moveRight');
+        createButton(100, this.cameras.main.height - 140, '↑', 'moveUp');
+        createButton(100, this.cameras.main.height - 60, '↓', 'moveDown');
 
-        // Botón de ataque con animación de escala
-        const attackBtn = this.add.rectangle(this.cameras.main.width - 80, this.cameras.main.height - 80, 70, 70, 0xFF4444)
+        // Botón de ataque mejorado, ubicado en la esquina inferior derecha
+        const attackBtn = this.add.rectangle(this.cameras.main.width - 80, this.cameras.main.height - 100, 80, 80, 0xFF4444)
             .setInteractive();
         attackBtn.on('pointerdown', () => {
             this.tweens.add({
@@ -166,6 +169,10 @@ export default class GameScene extends Phaser.Scene {
                 ease: 'Power1'
             });
         });
+        // Texto llamativo para el botón de ataque
+        this.add.text(this.cameras.main.width - 80, this.cameras.main.height - 100, '¡ATACAR!', { 
+            fontSize: '16px', fill: '#fff', fontStyle: 'bold'
+        }).setOrigin(0.5);
     }
 
     setupUI() {
@@ -175,7 +182,9 @@ export default class GameScene extends Phaser.Scene {
     }
 
     update() {
-        // Actualizar movimiento del jugador según controles táctiles
+        if (this.gameOver) return; // No actualizar si el juego terminó
+
+        // Movimiento del jugador según controles táctiles
         const acceleration = 600;
         this.player.setAccelerationX(
             this.gameState.moveLeft ? -acceleration :
@@ -195,7 +204,7 @@ export default class GameScene extends Phaser.Scene {
         this.playerHealthBar.width = this.gameState.playerHealth;
         this.opponentHealthBar.width = this.gameState.opponentHealth;
 
-        // Verificar condiciones de fin del juego
+        // Verificar condiciones de fin del juego (solo se llama una vez gracias al flag gameOver)
         if (this.gameState.opponentHealth <= 0) this.endGame('player');
         if (this.gameState.playerHealth <= 0) this.endGame('opponent');
     }
@@ -206,11 +215,11 @@ export default class GameScene extends Phaser.Scene {
         this.gameState.attackCooldown = true;
         this.sound.play('attackSound');
 
-        // Si se ha recogido el power-up de escudo, se activa la invulnerabilidad
+        // Si se ha recogido el power-up de escudo, activa la invulnerabilidad
         if (this.gameState.collectedPowerUp.type === 'powerUpShield') {
             this.activateShield();
         } else {
-            // En caso contrario, se lanza un proyectil
+            // De lo contrario, lanza un proyectil
             this.createBullet(
                 this.player.x,
                 this.player.y,
@@ -228,7 +237,7 @@ export default class GameScene extends Phaser.Scene {
 
     activateShield() {
         this.gameState.playerInvulnerable = true;
-        // Mostrar efecto visual de escudo
+        // Efecto visual de escudo
         const shield = this.add.circle(this.player.x, this.player.y, 40, 0x00ffff, 0.3);
         this.tweens.add({
             targets: shield,
@@ -285,21 +294,25 @@ export default class GameScene extends Phaser.Scene {
         const healthProp = isPlayer ? 'playerHealth' : 'opponentHealth';
         const invulnerableProp = isPlayer ? 'playerInvulnerable' : 'opponentInvulnerable';
 
-        if (this.gameState[invulnerableProp]) return;
+        // Si el objetivo es invulnerable, destruir la bala y salir
+        if (this.gameState[invulnerableProp]) {
+            bullet.destroy();
+            return;
+        }
 
-        // Aplicar daño y asegurar que no baje de 0
+        // Aplicar daño y actualizar la salud
         this.gameState[healthProp] = Phaser.Math.Clamp(
             this.gameState[healthProp] - bullet.getData('damage'),
             0,
             100
         );
 
-        // Efecto visual: tint rojo y partículas de impacto
+        // Efectos visuales: tint rojo y partículas de impacto
         target.setTint(0xff0000);
         this.addHitParticles(target.x, target.y);
         this.time.delayedCall(300, () => target.clearTint());
 
-        // Actualizar UI
+        // Actualizar la UI
         this.registry.events.emit("updateHealth", {
             player: this.gameState.playerHealth,
             opponent: this.gameState.opponentHealth
@@ -356,7 +369,6 @@ export default class GameScene extends Phaser.Scene {
 
         this.sound.play('itemPickup');
         
-        // Detener animación de flotación
         if (powerUp.tween) powerUp.tween.stop();
         
         // Guardar el power-up recogido
@@ -395,6 +407,8 @@ export default class GameScene extends Phaser.Scene {
     }
 
     endGame(winner) {
+        if (this.gameOver) return;
+        this.gameOver = true;
         this.bgMusic.stop();
         this.scene.stop('UIScene');
         this.scene.start('EndScene', { winner });
@@ -409,7 +423,7 @@ export default class GameScene extends Phaser.Scene {
             loop: true
         });
 
-        // Temporizador para los ataques del oponente, con variación en el tipo de bala
+        // Temporizador para los ataques del oponente
         this.time.addEvent({
             delay: 6000,
             callback: () => {
