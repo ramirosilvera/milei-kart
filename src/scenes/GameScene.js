@@ -41,10 +41,6 @@ export default class GameScene extends Phaser.Scene {
         };
 
         this.gameOver = false;
-
-        // Textos simples para mostrar la salud (sin barras complejas)
-        this.playerHealthText = this.add.text(20, 20, "Jugador: 100", { fontSize: "24px", fill: "#fff" });
-        this.opponentHealthText = this.add.text(this.cameras.main.width - 220, 20, "Oponente: 100", { fontSize: "24px", fill: "#fff" });
     }
 
     setupPhysics() {
@@ -77,7 +73,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     createGameObjects() {
-        // No se lanza una UIScene; todo se gestiona aquí para evitar bloqueos.
+        // Aquí no se lanza ninguna escena de UI para simplificar la carga.
     }
 
     setupEventListeners() {
@@ -140,7 +136,7 @@ export default class GameScene extends Phaser.Scene {
         this.rightButton = this.add.circle(baseX + 70, baseY, radius, 0x333333, 0.8).setInteractive();
         this.add.text(baseX + 70, baseY, '→', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
 
-        // Eventos de entrada para cada botón
+        // Eventos para cada botón
         this.upButton.on('pointerdown', () => { this.gameState.moveUp = true; });
         this.upButton.on('pointerup', () => { this.gameState.moveUp = false; });
         this.upButton.on('pointerout', () => { this.gameState.moveUp = false; });
@@ -159,7 +155,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     setupAttackButton() {
-        // Botón de ataque en la esquina inferior derecha (botón circular grande)
+        // Botón de ataque en la esquina inferior derecha (circular grande)
         const btnX = this.cameras.main.width - 100;
         const btnY = this.cameras.main.height - 100;
         const radius = 60;
@@ -214,10 +210,7 @@ export default class GameScene extends Phaser.Scene {
         // Comportamiento del oponente
         this.opponentBehavior();
 
-        // Actualización simple de textos de salud
-        this.playerHealthText.setText("Jugador: " + this.gameState.playerHealth);
-        this.opponentHealthText.setText("Oponente: " + this.gameState.opponentHealth);
-
+        // Condiciones de fin del juego
         if (this.gameState.playerHealth <= 0) this.endGame('opponent');
         if (this.gameState.opponentHealth <= 0) this.endGame('player');
     }
@@ -272,7 +265,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     attackWithPowerUp(user, target, powerUpType) {
-        // Cada bala usará como textura la imagen del power‑up recogido
+        // Cada bala usa como textura la imagen del power‑up recogido
         switch (powerUpType) {
             case 'powerUpDesinformation':
                 this.createBullet(user, target, { damage: 35, speed: 500, texture: powerUpType });
@@ -305,11 +298,14 @@ export default class GameScene extends Phaser.Scene {
         // Balas más grandes
         bullet.setScale(0.4);
         bullet.setData('damage', options.damage);
+
         let angle = Phaser.Math.Angle.Between(source.x, source.y, target.x, target.y);
         if (options.angleOffset) {
             angle += Phaser.Math.DegToRad(options.angleOffset);
         }
         this.physics.velocityFromRotation(angle, options.speed, bullet.body.velocity);
+
+        // Tween para dar efecto de pulso
         this.tweens.add({
             targets: bullet,
             scale: 0.5,
@@ -317,6 +313,7 @@ export default class GameScene extends Phaser.Scene {
             duration: 300,
             repeat: -1
         });
+        // Aseguramos destruir la bala después de 3 segundos si no impacta
         this.time.delayedCall(3000, () => { if (bullet.active) bullet.destroy(); });
         return bullet;
     }
@@ -343,11 +340,6 @@ export default class GameScene extends Phaser.Scene {
                 }
             }
         });
-        this.showPowerUpMessage(
-            user === 'player' ? '¡Escudo activado!' : '¡Escudo del oponente activado!',
-            sprite.x,
-            sprite.y - 50
-        );
     }
 
     applySlowEffect(targetSprite) {
@@ -359,21 +351,30 @@ export default class GameScene extends Phaser.Scene {
     handleHit(bullet, target, targetType) {
         if (bullet.getData('processed')) return;
         bullet.setData('processed', true);
+
+        // Determinamos a quién se le resta salud
         const isPlayer = targetType === 'player';
         const healthProp = isPlayer ? 'playerHealth' : 'opponentHealth';
         const invulnerableProp = isPlayer ? 'playerInvulnerable' : 'opponentInvulnerable';
+
+        // Si el objetivo es invulnerable, destruimos la bala y salimos
         if (this.gameState[invulnerableProp]) {
             bullet.destroy();
             return;
         }
+
+        // Se actualiza la salud
         this.gameState[healthProp] = Phaser.Math.Clamp(
             this.gameState[healthProp] - bullet.getData('damage'),
             0,
             100
         );
+
         target.setTint(0xff0000);
         this.addHitParticles(target.x, target.y);
         this.time.delayedCall(300, () => target.clearTint());
+
+        // Si la bala tiene una función de callback (por ejemplo, para ralentizar), se ejecuta
         if (bullet.getData('hitCallback')) {
             bullet.getData('hitCallback')(target);
         }
@@ -422,45 +423,20 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    showPowerUpMessage(message, x, y) {
-        const msg = this.add.text(x, y, message, {
-            fontSize: '20px',
-            fill: '#fff',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-        this.tweens.add({
-            targets: msg,
-            alpha: 0,
-            duration: 1500,
-            ease: 'Power1',
-            onComplete: () => msg.destroy()
-        });
-    }
-
-    getPowerUpMessage(type) {
-        const messages = {
-            powerUpDesinformation: '¡Desinformación activada!',
-            powerUpRetuits: '¡Retuits activados!',
-            powerUpShield: '¡Escudo activado!',
-            powerUpHostigamiento: '¡Hostigamiento activado!'
-        };
-        return messages[type] || '';
-    }
-
     collectPowerUp(sprite, powerUp) {
+        // El jugador recoge el power‑up si aún no tiene uno
         if (sprite === this.player && !this.gameState.playerPowerUp) {
             const type = powerUp.texture.key;
             this.gameState.playerPowerUp = { type };
-            this.showPowerUpMessage(this.getPowerUpMessage(type), sprite.x, sprite.y - 50);
             powerUp.destroy();
         }
     }
 
     collectPowerUpForOpponent(sprite, powerUp) {
+        // El oponente recoge el power‑up si aún no tiene uno
         if (sprite === this.opponent && !this.gameState.opponentPowerUp) {
             const type = powerUp.texture.key;
             this.gameState.opponentPowerUp = { type };
-            this.showPowerUpMessage(this.getPowerUpMessage(type), sprite.x, sprite.y - 50);
             powerUp.destroy();
         }
     }
