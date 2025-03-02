@@ -31,7 +31,7 @@ export default class MenuScene extends Phaser.Scene {
             console.error("Falta el asset 'logo'");
         }
 
-        // Título con mayor tamaño y contenedor redimensionable
+        // Título: sin borde en el fondo, con mayor tamaño y sombra
         const titleText = this.add.text(0, 0, "Milei Kart: La Carrera de la Distracción", {
             fontFamily: '"Arcade Classic", sans-serif',
             fontSize: '42px',
@@ -39,8 +39,7 @@ export default class MenuScene extends Phaser.Scene {
             stroke: '#000',
             strokeThickness: 4,
             align: 'center'
-        }).setOrigin(0.5)
-          .setShadow(2, 2, "#000", 2, true, true);
+        }).setOrigin(0.5).setShadow(2, 2, "#000", 2, true, true);
         const titleBg = this.add.rectangle(
             0,
             0,
@@ -48,8 +47,7 @@ export default class MenuScene extends Phaser.Scene {
             titleText.height + 30,
             0x000000,
             0.7
-        ).setStrokeStyle(2, 0xffffff)
-         .setOrigin(0.5);
+        ).setOrigin(0.5);
         const titleContainer = this.add.container(this.cameras.main.centerX, 110, [titleBg, titleText]);
         titleContainer.alpha = 0;
         this.tweens.add({
@@ -59,7 +57,7 @@ export default class MenuScene extends Phaser.Scene {
             ease: 'Power2'
         });
 
-        // Narrativa ampliada que contextualiza la carrera
+        // Narrativa ampliada: se reposiciona para dar mayor espacio
         const narrative = "En un mundo de carreras vertiginosas y polémicas, Milei se enfrenta a la oposición en un desafío sin precedentes. Con su kart revolucionario, recorre circuitos llenos de trampas mediáticas y controversias. ¡Cada curva es una oportunidad para la polémica!";
         const narrativeText = this.add.text(0, 0, narrative, {
             fontFamily: 'Arial',
@@ -67,8 +65,7 @@ export default class MenuScene extends Phaser.Scene {
             fill: '#fff',
             align: 'center',
             wordWrap: { width: this.cameras.main.width * 0.8 }
-        }).setOrigin(0.5)
-          .setShadow(2, 2, "#000", 2, true, true);
+        }).setOrigin(0.5).setShadow(2, 2, "#000", 2, true, true);
         const narrativeBg = this.add.rectangle(
             0,
             0,
@@ -76,9 +73,8 @@ export default class MenuScene extends Phaser.Scene {
             narrativeText.height + 20,
             0x000000,
             0.7
-        ).setStrokeStyle(2, 0xffffff)
-         .setOrigin(0.5);
-        const narrativeContainer = this.add.container(this.cameras.main.centerX, 200, [narrativeBg, narrativeText]);
+        ).setOrigin(0.5);
+        const narrativeContainer = this.add.container(this.cameras.main.centerX, 250, [narrativeBg, narrativeText]);
         narrativeContainer.alpha = 0;
         this.tweens.add({
             targets: narrativeContainer,
@@ -88,7 +84,7 @@ export default class MenuScene extends Phaser.Scene {
             ease: 'Power2'
         });
 
-        // Mini Tutorial con instrucciones del juego
+        // Mini Tutorial: instrucciones del juego, sin borde en el fondo
         const tutorial = "Mini Tutorial:\n\n- Recoge powerups: Desinformación, Tweets, Hostigamiento y Escudo de Privilegios.\n- Úsalos para atacar al enemigo y defenderte.\n- Gana la carrera reduciendo la barra de salud del oponente a cero.";
         const tutorialText = this.add.text(0, 0, tutorial, {
             fontFamily: 'Arial',
@@ -96,8 +92,7 @@ export default class MenuScene extends Phaser.Scene {
             fill: '#FFD700',
             align: 'left',
             wordWrap: { width: this.cameras.main.width * 0.8 }
-        }).setOrigin(0.5)
-          .setShadow(2, 2, "#000", 2, true, true);
+        }).setOrigin(0.5).setShadow(2, 2, "#000", 2, true, true);
         const tutorialBg = this.add.rectangle(
             0,
             0,
@@ -105,9 +100,8 @@ export default class MenuScene extends Phaser.Scene {
             tutorialText.height + 20,
             0x000000,
             0.7
-        ).setStrokeStyle(2, 0xffffff)
-         .setOrigin(0.5);
-        const tutorialContainer = this.add.container(this.cameras.main.centerX, 320, [tutorialBg, tutorialText]);
+        ).setOrigin(0.5);
+        const tutorialContainer = this.add.container(this.cameras.main.centerX, 400, [tutorialBg, tutorialText]);
         tutorialContainer.alpha = 0;
         this.tweens.add({
             targets: tutorialContainer,
@@ -117,7 +111,7 @@ export default class MenuScene extends Phaser.Scene {
             ease: 'Power2'
         });
 
-        // Botón "JUGAR" con texto más grande y contenedor ajustado
+        // Botón "JUGAR": sin borde en el fondo, con mayor tamaño de texto y efectos de interacción
         const buttonText = this.add.text(0, 0, "JUGAR", {
             fontFamily: '"Arcade Classic", sans-serif',
             fontSize: '32px',
@@ -125,8 +119,7 @@ export default class MenuScene extends Phaser.Scene {
             stroke: '#000',
             strokeThickness: 3,
             align: 'center'
-        }).setOrigin(0.5)
-          .setShadow(2, 2, "#000", 2, true, true);
+        }).setOrigin(0.5).setShadow(2, 2, "#000", 2, true, true);
         const buttonBg = this.add.rectangle(
             0,
             0,
@@ -134,10 +127,9 @@ export default class MenuScene extends Phaser.Scene {
             buttonText.height + 20,
             0xFF2222,
             1
-        ).setStrokeStyle(4, 0xffffff)
-         .setOrigin(0.5)
+        ).setOrigin(0.5)
          .setInteractive({ useHandCursor: true });
-        const buttonContainer = this.add.container(this.cameras.main.centerX, 450, [buttonBg, buttonText]);
+        const buttonContainer = this.add.container(this.cameras.main.centerX, 550, [buttonBg, buttonText]);
         buttonContainer.alpha = 0;
         this.tweens.add({
             targets: buttonContainer,
