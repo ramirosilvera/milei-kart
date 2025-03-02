@@ -4,7 +4,7 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     create() {
-        // Fondo: si la imagen no existe, se usa un color sólido como fallback
+        // Fondo: se muestra la imagen o, en su defecto, un color sólido
         if (this.textures.exists('menuBackground')) {
             this.add.image(
                 this.cameras.main.centerX,
@@ -16,11 +16,12 @@ export default class MenuScene extends Phaser.Scene {
             console.error("Falta el asset 'menuBackground'");
         }
 
-        // Logo con fade-in sutil
+        // Logo con fade-in sutil y reposicionado (centrado en la parte superior con margen)
         if (this.textures.exists('logo')) {
-            const logo = this.add.image(this.cameras.main.centerX, 80, 'logo')
-                .setScale(0.5)
+            const logo = this.add.image(this.cameras.main.centerX, 60, 'logo')
+                .setScale(0.7)
                 .setAlpha(0);
+            // Efecto de aparición suave
             this.tweens.add({
                 targets: logo,
                 alpha: 1,
@@ -31,15 +32,27 @@ export default class MenuScene extends Phaser.Scene {
             console.error("Falta el asset 'logo'");
         }
 
-        // Título con animación y nuevo mensaje
-        const titleContainer = this.add.container(this.cameras.main.centerX, 150);
-        const titleBg = this.add.rectangle(0, 0, 600, 80, 0x000000, 0.7);
+        // Título con contenedor redondeado, sombra y escalado según el contenido
         const titleText = this.add.text(0, 0, "Milei Kart: La Carrera de la Distracción", {
-            fontSize: '32px',
+            fontFamily: '"Arcade Classic", sans-serif',
+            fontSize: '36px',
             fill: '#32CD32',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-        titleContainer.add([titleBg, titleText]);
+            stroke: '#000',
+            strokeThickness: 4,
+            align: 'center'
+        }).setOrigin(0.5)
+          .setShadow(2, 2, "#000", 2, true, true);
+        // Fondo ajustado al tamaño del texto, con bordes suaves
+        const titleBg = this.add.rectangle(
+            0,
+            0,
+            titleText.width + 40,
+            titleText.height + 20,
+            0x000000,
+            0.7
+        ).setStrokeStyle(2, 0xffffff)
+         .setOrigin(0.5);
+        const titleContainer = this.add.container(this.cameras.main.centerX, 130, [titleBg, titleText]);
         titleContainer.alpha = 0;
         this.tweens.add({
             targets: titleContainer,
@@ -48,17 +61,26 @@ export default class MenuScene extends Phaser.Scene {
             ease: 'Power2'
         });
 
-        // Narrativa satírica centrada en el enfrentamiento con Kiciloff y la oposición
+        // Narrativa satírica con contenedor ajustado, wordWrap dinámico y sombra en el texto
         const narrative = "En un país sumido en el caos del escándalo cripto y los errores del gobierno, Milei lanza su desafío definitivo. Con su kart revolucionario, se enfrenta a Kiciloff y a la oposición, desviando las críticas y demostrando maniobras audaces en cada curva.";
-        const narrativeContainer = this.add.container(this.cameras.main.centerX, 300);
-        const narrativeBg = this.add.rectangle(0, 0, 700, 150, 0x000000, 0.7);
         const narrativeText = this.add.text(0, 0, narrative, {
+            fontFamily: 'Arial',
             fontSize: '20px',
             fill: '#fff',
             align: 'center',
-            wordWrap: { width: 680 }
-        }).setOrigin(0.5);
-        narrativeContainer.add([narrativeBg, narrativeText]);
+            wordWrap: { width: this.cameras.main.width * 0.8 }
+        }).setOrigin(0.5)
+          .setShadow(2, 2, "#000", 2, true, true);
+        const narrativeBg = this.add.rectangle(
+            0,
+            0,
+            narrativeText.width + 40,
+            narrativeText.height + 20,
+            0x000000,
+            0.7
+        ).setStrokeStyle(2, 0xffffff)
+         .setOrigin(0.5);
+        const narrativeContainer = this.add.container(this.cameras.main.centerX, 250, [narrativeBg, narrativeText]);
         narrativeContainer.alpha = 0;
         this.tweens.add({
             targets: narrativeContainer,
@@ -68,15 +90,27 @@ export default class MenuScene extends Phaser.Scene {
             ease: 'Power2'
         });
 
-        // Botón "JUGAR" con animaciones de interacción (hover, click)
-        const buttonContainer = this.add.container(this.cameras.main.centerX, 500);
-        const buttonBg = this.add.rectangle(0, 0, 220, 70, 0xFF2222, 1)
-            .setStrokeStyle(3, 0xffffff);
+        // Botón "JUGAR" con contenedor redimensionable, interactividad y efectos de escalado
         const buttonText = this.add.text(0, 0, "JUGAR", {
+            fontFamily: '"Arcade Classic", sans-serif',
             fontSize: '28px',
-            fill: '#fff'
-        }).setOrigin(0.5);
-        buttonContainer.add([buttonBg, buttonText]);
+            fill: '#fff',
+            stroke: '#000',
+            strokeThickness: 3,
+            align: 'center'
+        }).setOrigin(0.5)
+          .setShadow(2, 2, "#000", 2, true, true);
+        const buttonBg = this.add.rectangle(
+            0,
+            0,
+            buttonText.width + 40,
+            buttonText.height + 20,
+            0xFF2222,
+            1
+        ).setStrokeStyle(4, 0xffffff)
+         .setOrigin(0.5)
+         .setInteractive({ useHandCursor: true });
+        const buttonContainer = this.add.container(this.cameras.main.centerX, 400, [buttonBg, buttonText]);
         buttonContainer.alpha = 0;
         this.tweens.add({
             targets: buttonContainer,
@@ -86,8 +120,7 @@ export default class MenuScene extends Phaser.Scene {
             ease: 'Power2'
         });
 
-        // Interactividad en el botón con efectos de escalado y sonido
-        buttonBg.setInteractive({ useHandCursor: true });
+        // Interactividad del botón: escalado, rebote y transición a la escena de juego
         buttonBg.on('pointerdown', () => {
             this.sound.play('menuSelect');
             this.tweens.add({
@@ -95,6 +128,7 @@ export default class MenuScene extends Phaser.Scene {
                 scale: 0.9,
                 duration: 100,
                 yoyo: true,
+                ease: 'Power2',
                 onComplete: () => {
                     this.scene.start('GameScene');
                 }
