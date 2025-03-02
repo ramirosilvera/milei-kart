@@ -4,7 +4,7 @@ export default class UIScene extends Phaser.Scene {
     }
 
     create() {
-        // Crear un contenedor para la UI fijo en pantalla
+        // Contenedor fijo para la UI
         this.uiContainer = this.add.container(0, 0);
         
         // Barra de salud del jugador (esquina superior izquierda)
@@ -41,15 +41,24 @@ export default class UIScene extends Phaser.Scene {
         this.opponentHealthBar = opponentHealthBar;
         this.opponentHealthText = opponentHealthText;
 
+        // Últimos valores para evitar actualizaciones innecesarias
+        this.lastPlayerHealth = 100;
+        this.lastOpponentHealth = 100;
+
         // Escuchar el evento para actualizar la salud
         this.registry.events.on("updateHealth", (data) => {
-            const playerWidth = (data.player / 100) * 250;
-            this.playerHealthBar.width = playerWidth;
-            this.playerHealthText.setText("Jugador: " + data.player);
-            
-            const opponentWidth = (data.opponent / 100) * 250;
-            this.opponentHealthBar.width = opponentWidth;
-            this.opponentHealthText.setText("Oponente: " + data.opponent);
+            if (data.player !== this.lastPlayerHealth) {
+                const playerWidth = (data.player / 100) * 250;
+                this.playerHealthBar.width = playerWidth;
+                this.playerHealthText.setText("Jugador: " + data.player);
+                this.lastPlayerHealth = data.player;
+            }
+            if (data.opponent !== this.lastOpponentHealth) {
+                const opponentWidth = (data.opponent / 100) * 250;
+                this.opponentHealthBar.width = opponentWidth;
+                this.opponentHealthText.setText("Oponente: " + data.opponent);
+                this.lastOpponentHealth = data.opponent;
+            }
         });
     }
 }
