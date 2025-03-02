@@ -2,55 +2,119 @@ export default class MenuScene extends Phaser.Scene {
     constructor() {
         super('MenuScene');
     }
+
     create() {
-        // Fondo del menú a pantalla completa
-        this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'menuBackground')
-            .setDisplaySize(this.cameras.main.width, this.cameras.main.height);
+        // Fondo: si la imagen no existe, se usa un color sólido como fallback
+        if (this.textures.exists('menuBackground')) {
+            this.add.image(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY,
+                'menuBackground'
+            ).setDisplaySize(this.cameras.main.width, this.cameras.main.height);
+        } else {
+            this.cameras.main.setBackgroundColor(0x000000);
+            console.error("Falta el asset 'menuBackground'");
+        }
 
-        // Mostrar el logo en la parte superior central
-        this.add.image(this.cameras.main.centerX, 80, 'logo').setScale(0.5);
+        // Logo con fade-in sutil
+        if (this.textures.exists('logo')) {
+            const logo = this.add.image(this.cameras.main.centerX, 80, 'logo')
+                .setScale(0.5)
+                .setAlpha(0);
+            this.tweens.add({
+                targets: logo,
+                alpha: 1,
+                duration: 1000,
+                ease: 'Power2'
+            });
+        } else {
+            console.error("Falta el asset 'logo'");
+        }
 
-        // Contenedor del título
+        // Título con animación y nuevo mensaje
         const titleContainer = this.add.container(this.cameras.main.centerX, 150);
-        const titleBg = this.add.rectangle(0, 0, 600, 80, 0x000000, 0.5);
-        const titleText = this.add.text(0, 0, "Milei Kart: Carrera Manipuladora", {
+        const titleBg = this.add.rectangle(0, 0, 600, 80, 0x000000, 0.7);
+        const titleText = this.add.text(0, 0, "Milei Kart: La Carrera de la Distracción", {
             fontSize: '32px',
             fill: '#32CD32',
             fontStyle: 'bold'
         }).setOrigin(0.5);
         titleContainer.add([titleBg, titleText]);
+        titleContainer.alpha = 0;
+        this.tweens.add({
+            targets: titleContainer,
+            alpha: 1,
+            duration: 1500,
+            ease: 'Power2'
+        });
 
-        // Narrativa satírica
-        const narrative = "En un mundo asolado por la desinformación, escándalos cripto y ataques implacables, Milei se enfrenta a su rival en una carrera explosiva. ¡La misión: destruir el kart opositor con astucia y poder!";
+        // Narrativa satírica centrada en el enfrentamiento con Kiciloff y la oposición
+        const narrative = "En un país sumido en el caos del escándalo cripto y los errores del gobierno, Milei lanza su desafío definitivo. Con su kart revolucionario, se enfrenta a Kiciloff y a la oposición, desviando las críticas y demostrando maniobras audaces en cada curva.";
         const narrativeContainer = this.add.container(this.cameras.main.centerX, 300);
-        const narrativeBg = this.add.rectangle(0, 0, 700, 150, 0x000000, 0.5);
+        const narrativeBg = this.add.rectangle(0, 0, 700, 150, 0x000000, 0.7);
         const narrativeText = this.add.text(0, 0, narrative, {
             fontSize: '20px',
             fill: '#fff',
+            align: 'center',
             wordWrap: { width: 680 }
         }).setOrigin(0.5);
         narrativeContainer.add([narrativeBg, narrativeText]);
+        narrativeContainer.alpha = 0;
+        this.tweens.add({
+            targets: narrativeContainer,
+            alpha: 1,
+            duration: 1500,
+            delay: 500,
+            ease: 'Power2'
+        });
 
-        // Botón para iniciar la partida
+        // Botón "JUGAR" con animaciones de interacción (hover, click)
         const buttonContainer = this.add.container(this.cameras.main.centerX, 500);
-        const buttonBg = this.add.rectangle(0, 0, 200, 60, 0xFF2222, 1).setStrokeStyle(2, 0xffffff);
+        const buttonBg = this.add.rectangle(0, 0, 220, 70, 0xFF2222, 1)
+            .setStrokeStyle(3, 0xffffff);
         const buttonText = this.add.text(0, 0, "JUGAR", {
             fontSize: '28px',
             fill: '#fff'
         }).setOrigin(0.5);
         buttonContainer.add([buttonBg, buttonText]);
+        buttonContainer.alpha = 0;
+        this.tweens.add({
+            targets: buttonContainer,
+            alpha: 1,
+            duration: 1500,
+            delay: 1000,
+            ease: 'Power2'
+        });
 
-        // Interactividad sobre el rectángulo del botón
+        // Interactividad en el botón con efectos de escalado y sonido
         buttonBg.setInteractive({ useHandCursor: true });
         buttonBg.on('pointerdown', () => {
             this.sound.play('menuSelect');
-            this.scene.start('GameScene');
+            this.tweens.add({
+                targets: buttonContainer,
+                scale: 0.9,
+                duration: 100,
+                yoyo: true,
+                onComplete: () => {
+                    this.scene.start('GameScene');
+                }
+            });
         });
         buttonBg.on('pointerover', () => {
-            buttonBg.setFillStyle(0xFF5555);
+            this.tweens.add({
+                targets: buttonContainer,
+                scale: 1.05,
+                duration: 200,
+                ease: 'Power2'
+            });
         });
         buttonBg.on('pointerout', () => {
-            buttonBg.setFillStyle(0xFF2222);
+            this.tweens.add({
+                targets: buttonContainer,
+                scale: 1,
+                duration: 200,
+                ease: 'Power2'
+            });
         });
     }
 }
