@@ -56,6 +56,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupPhysics() {
+    // Creación del jugador
     this.player = this.physics.add.sprite(
       this.cameras.main.centerX,
       this.cameras.main.height - 100,
@@ -66,6 +67,7 @@ export default class GameScene extends Phaser.Scene {
       .setDrag(600, 600)
       .setMaxVelocity(300);
 
+    // Creación del oponente (más lento que antes)
     this.opponent = this.physics.add.sprite(
       this.cameras.main.centerX,
       100,
@@ -73,8 +75,12 @@ export default class GameScene extends Phaser.Scene {
     )
       .setScale(0.1)
       .setBounce(1, 0)
-      .setCollideWorldBounds(true)
-      .setVelocityX(100);
+      .setCollideWorldBounds(true);
+    // No se asigna velocidad fija; se controlará mediante moveToObject o velocidad manual.
+
+    // Mejoramos la precisión de las colisiones usando cuerpos circulares.
+    this.player.body.setCircle(this.player.displayWidth / 2);
+    this.opponent.body.setCircle(this.opponent.displayWidth / 2);
 
     this.powerUps = this.physics.add.group();
   }
@@ -95,7 +101,7 @@ export default class GameScene extends Phaser.Scene {
       .setInteractive()
       .setScrollFactor(0)
       .setDepth(1);
-    // Guarda el radio para usarlo al limitar el movimiento
+    // Guarda el radio para limitar el movimiento
     this.joystickBaseRadius = baseRadius;
 
     // Crea el knob (palanca) más pequeño
@@ -202,6 +208,7 @@ export default class GameScene extends Phaser.Scene {
     this.player.setAccelerationX(vec.x * acceleration);
     this.player.setAccelerationY(vec.y * acceleration);
 
+    // Actualiza el comportamiento del oponente
     this.opponentBehavior();
 
     if (this.gameState.playerHealth <= 0) this.endGame("opponent");
@@ -235,8 +242,8 @@ export default class GameScene extends Phaser.Scene {
           target.x,
           target.y
         );
+        // Ajustamos el radio de colisión para mayor precisión
         const HITBOX_RADIUS = 40;
-
         if (currentDistance <= HITBOX_RADIUS) {
           this.applyDamage(target, options.damage);
         }
@@ -431,27 +438,52 @@ export default class GameScene extends Phaser.Scene {
   }
 
   opponentBehavior() {
-    if (!this.gameState.opponentPowerUp) {
-      let closestPowerUp = null;
-      let closestDistance = Infinity;
-      this.powerUps.getChildren().forEach((pu) => {
-        if (!pu.active) return;
-        let d = Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, pu.x, pu.y);
-        if (d < closestDistance) {
-          closestDistance = d;
-          closestPowerUp = pu;
-        }
-      });
-      if (closestPowerUp) {
-        this.physics.moveToObject(this.opponent, closestPowerUp, 150);
-      } else {
-        this.physics.moveToObject(this.opponent, this.player, 100);
-      }
-    } else {
-      this.physics.moveToObject(this.opponent, this.player, 200);
+    // Si el jugador (Milei) tiene un power up, el oponente intenta escapar
+    if (this.gameState.playerPowerUp) {
+      const dx = this.opponent.x - this.player.x;
+      const dy = this.opponent.y - this.player.y;
+      const angle = Math.atan2(dy, dx);
+      // Velocidad de escape moderada (120)
+      this.physics.velocityFromRotation(angle, 120, this.opponent.body.velocity);
+    }
+    // Si el oponente posee un power up, persigue al jugador
+    else if (this.gameState.opponentPowerUp) {
+      this.physics.moveToObject(this.opponent, this.player, 150);
       let d = Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, this.player.x, this.player.y);
       if (d < 300) {
         this.opponentAttack();
+      }
+    }
+    // Si ninguno tiene power up
+    else {
+      // Primero, si existen power ups activos en la pista, persigue el más cercano (velocidad baja: 80)
+      let activePowerUps = this.powerUps.getChildren().filter(pu => pu.active);
+      if (activePowerUps.length > 0) {
+        let closestPowerUp = null;
+        let closestDistance = Infinity;
+        activePowerUps.forEach(pu => {
+          let d = Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, pu.x, pu.y);
+          if (d < closestDistance) {
+            closestDistance = d;
+            closestPowerUp = pu;
+          }
+        });
+        if (closestPowerUp) {
+          this.physics.moveToObject(this.opponent, closestPowerUp, 80);
+        }
+      }
+      // Si no hay power ups, el oponente entra en modo patrulla
+      else {
+        if (!this.opponentPatrolTarget ||
+            Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, this.opponentPatrolTarget.x, this.opponentPatrolTarget.y) < 10) {
+          // Escoge un nuevo destino aleatorio dentro de la pantalla
+          const margin = 50;
+          const x = Phaser.Math.Between(margin, this.cameras.main.width - margin);
+          const y = Phaser.Math.Between(margin, this.cameras.main.height - margin);
+          this.opponentPatrolTarget = new Phaser.Math.Vector2(x, y);
+        }
+        // Movimiento en modo patrulla a velocidad baja (80)
+        this.physics.moveToObject(this.opponent, this.opponentPatrolTarget, 80);
       }
     }
   }
