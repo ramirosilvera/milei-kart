@@ -67,7 +67,7 @@ export default class GameScene extends Phaser.Scene {
       .setDrag(600, 600)
       .setMaxVelocity(300);
 
-    // Creación del oponente (más lento que antes)
+    // Creación del oponente (más lento)
     this.opponent = this.physics.add.sprite(
       this.cameras.main.centerX,
       100,
@@ -76,11 +76,11 @@ export default class GameScene extends Phaser.Scene {
       .setScale(0.1)
       .setBounce(1, 0)
       .setCollideWorldBounds(true);
-    // No se asigna velocidad fija; se controlará mediante moveToObject o velocidad manual.
 
-    // Mejoramos la precisión de las colisiones usando cuerpos circulares.
-    this.player.body.setCircle(this.player.displayWidth / 2);
-    this.opponent.body.setCircle(this.opponent.displayWidth / 2);
+    // Mejoramos la precisión de las colisiones usando cuerpos circulares
+    // Se utiliza un radio un poco menor al de la imagen para ajustarlo a la forma real del kart.
+    this.player.body.setCircle(this.player.displayWidth * 0.45);
+    this.opponent.body.setCircle(this.opponent.displayWidth * 0.45);
 
     this.powerUps = this.physics.add.group();
   }
@@ -90,31 +90,32 @@ export default class GameScene extends Phaser.Scene {
     this.setupAttackButton();
   }
 
-  // --- Joystick virtual (palanca deslizante) ---
+  // --- Joystick virtual (palanca) con apariencia de Nintendo ---
   setupJoystick() {
     const baseX = 100,
       baseY = this.cameras.main.height - 100;
-    const baseRadius = 60; // Radio de la base del joystick
+    const baseRadius = 80; // Aumentamos el radio de la base para facilitar el manejo
 
-    // Crea la base circular del joystick
-    this.joystickBase = this.add.circle(baseX, baseY, baseRadius, 0x888888, 0.6)
+    // Crea la base del joystick con un estilo que recuerda a Nintendo
+    this.joystickBase = this.add.circle(baseX, baseY, baseRadius, 0x444444, 0.8)
       .setInteractive()
       .setScrollFactor(0)
-      .setDepth(1);
-    // Guarda el radio para limitar el movimiento
+      .setDepth(1)
+      .setStrokeStyle(4, 0xffffff); // Borde blanco
     this.joystickBaseRadius = baseRadius;
 
-    // Crea el knob (palanca) más pequeño
-    const knobRadius = 30;
-    this.joystickKnob = this.add.circle(baseX, baseY, knobRadius, 0xcccccc, 0.8)
+    // Crea el knob (palanca) de mayor tamaño y con un color llamativo
+    const knobRadius = 40;
+    this.joystickKnob = this.add.circle(baseX, baseY, knobRadius, 0xee1111, 0.9)
       .setScrollFactor(0)
-      .setDepth(2);
-
-    // Inicializa el vector del joystick y bandera de activación
+      .setDepth(2)
+      .setStrokeStyle(2, 0xffffff);
+      
+    // Inicializa el vector del joystick y la bandera de activación
     this.gameState.joystickVector = new Phaser.Math.Vector2(0, 0);
     this.joystickActive = false;
 
-    // Eventos de entrada: activa el joystick si se toca dentro de la base
+    // Eventos de entrada para activar y actualizar el joystick
     this.input.on("pointerdown", (pointer) => {
       const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, baseX, baseY);
       if (dist <= baseRadius) {
@@ -242,7 +243,7 @@ export default class GameScene extends Phaser.Scene {
           target.x,
           target.y
         );
-        // Ajustamos el radio de colisión para mayor precisión
+        // Radio de colisión ajustado para mayor precisión
         const HITBOX_RADIUS = 40;
         if (currentDistance <= HITBOX_RADIUS) {
           this.applyDamage(target, options.damage);
@@ -438,25 +439,25 @@ export default class GameScene extends Phaser.Scene {
   }
 
   opponentBehavior() {
-    // Si el jugador (Milei) tiene un power up, el oponente intenta escapar
+    // Comportamiento del oponente:
+    // - Si el jugador (Milei) tiene un power up, el oponente intenta escapar.
+    // - Si el oponente tiene un power up, persigue al jugador.
+    // - Si ninguno tiene power up, primero persigue el power up más cercano (si hay alguno) y, si no,
+    //   entra en modo patrulla (destino aleatorio).
     if (this.gameState.playerPowerUp) {
       const dx = this.opponent.x - this.player.x;
       const dy = this.opponent.y - this.player.y;
       const angle = Math.atan2(dy, dx);
-      // Velocidad de escape moderada (120)
+      // Velocidad de escape moderada
       this.physics.velocityFromRotation(angle, 120, this.opponent.body.velocity);
-    }
-    // Si el oponente posee un power up, persigue al jugador
-    else if (this.gameState.opponentPowerUp) {
+    } else if (this.gameState.opponentPowerUp) {
       this.physics.moveToObject(this.opponent, this.player, 150);
       let d = Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, this.player.x, this.player.y);
       if (d < 300) {
         this.opponentAttack();
       }
-    }
-    // Si ninguno tiene power up
-    else {
-      // Primero, si existen power ups activos en la pista, persigue el más cercano (velocidad baja: 80)
+    } else {
+      // Si existen power ups activos en la pista, persigue el más cercano a velocidad baja
       let activePowerUps = this.powerUps.getChildren().filter(pu => pu.active);
       if (activePowerUps.length > 0) {
         let closestPowerUp = null;
@@ -471,18 +472,15 @@ export default class GameScene extends Phaser.Scene {
         if (closestPowerUp) {
           this.physics.moveToObject(this.opponent, closestPowerUp, 80);
         }
-      }
-      // Si no hay power ups, el oponente entra en modo patrulla
-      else {
+      } else {
+        // Modo patrulla: escoge un destino aleatorio dentro de la pantalla
         if (!this.opponentPatrolTarget ||
             Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, this.opponentPatrolTarget.x, this.opponentPatrolTarget.y) < 10) {
-          // Escoge un nuevo destino aleatorio dentro de la pantalla
           const margin = 50;
           const x = Phaser.Math.Between(margin, this.cameras.main.width - margin);
           const y = Phaser.Math.Between(margin, this.cameras.main.height - margin);
           this.opponentPatrolTarget = new Phaser.Math.Vector2(x, y);
         }
-        // Movimiento en modo patrulla a velocidad baja (80)
         this.physics.moveToObject(this.opponent, this.opponentPatrolTarget, 80);
       }
     }
