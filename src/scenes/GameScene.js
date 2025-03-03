@@ -4,7 +4,6 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    // Cargar imágenes y audio (ajusta las rutas según tu proyecto)
     this.load.image("track", "assets/track.png");
     this.load.image("mileiKart", "assets/mileiKart.png");
     this.load.image("opponentKart", "assets/opponentKart.png");
@@ -24,16 +23,13 @@ export default class GameScene extends Phaser.Scene {
     this.setupControls();
     this.setupTimers();
 
-    // Inicialización de power‑ups y flags de ataque
     this.gameState.playerPowerUp = null;
     this.gameState.opponentPowerUp = null;
     this.gameState.attackCooldown = false;
     this.gameState.opponentAttackCooldown = false;
 
-    // Lanzar la interfaz de usuario
     this.scene.launch("UIScene");
 
-    // Programar la comprobación de power‑up cada 500 ms
     this.time.addEvent({
       delay: 500,
       callback: this.checkPowerUpCollections,
@@ -43,13 +39,11 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupScene() {
-    // Fondo y música
     this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "track")
       .setDisplaySize(this.cameras.main.width, this.cameras.main.height);
     this.bgMusic = this.sound.add("bgMusic", { loop: true, volume: 0.5 });
     this.bgMusic.play();
 
-    // Estado inicial del juego
     this.gameState = {
       playerHealth: 100,
       opponentHealth: 100,
@@ -57,12 +51,13 @@ export default class GameScene extends Phaser.Scene {
       moveRight: false,
       moveUp: false,
       moveDown: false,
+      playerInvulnerable: false,
+      opponentInvulnerable: false
     };
     this.gameOver = false;
   }
 
   setupPhysics() {
-    // Crear jugador
     this.player = this.physics.add.sprite(
       this.cameras.main.centerX,
       this.cameras.main.height - 100,
@@ -73,7 +68,6 @@ export default class GameScene extends Phaser.Scene {
       .setDrag(600, 600)
       .setMaxVelocity(300);
 
-    // Crear oponente
     this.opponent = this.physics.add.sprite(
       this.cameras.main.centerX,
       100,
@@ -84,7 +78,6 @@ export default class GameScene extends Phaser.Scene {
       .setCollideWorldBounds(true)
       .setVelocityX(100);
 
-    // Los power‑ups se administran en un grupo
     this.powerUps = this.physics.add.group();
   }
 
@@ -96,20 +89,19 @@ export default class GameScene extends Phaser.Scene {
   setupJoystick() {
     const baseX = 100, baseY = this.cameras.main.height - 100;
     const radius = 50;
-    // Botón ↑
+    
     this.upButton = this.add.circle(baseX, baseY - 70, radius, 0x333333, 0.8).setInteractive();
     this.add.text(baseX, baseY - 70, "↑", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
-    // Botón ←
+    
     this.leftButton = this.add.circle(baseX - 70, baseY, radius, 0x333333, 0.8).setInteractive();
     this.add.text(baseX - 70, baseY, "←", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
-    // Botón ↓
+    
     this.downButton = this.add.circle(baseX, baseY + 70, radius, 0x333333, 0.8).setInteractive();
     this.add.text(baseX, baseY + 70, "↓", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
-    // Botón →
+    
     this.rightButton = this.add.circle(baseX + 70, baseY, radius, 0x333333, 0.8).setInteractive();
     this.add.text(baseX + 70, baseY, "→", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
 
-    // Eventos
     this.upButton.on("pointerdown", () => { this.gameState.moveUp = true; });
     this.upButton.on("pointerup", () => { this.gameState.moveUp = false; });
     this.upButton.on("pointerout", () => { this.gameState.moveUp = false; });
@@ -149,7 +141,6 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupTimers() {
-    // Spawn de power‑ups cada 5 segundos
     this.time.addEvent({
       delay: 5000,
       callback: this.spawnPowerUp,
@@ -183,32 +174,44 @@ export default class GameScene extends Phaser.Scene {
     if (this.gameState.opponentHealth <= 0) this.endGame("player");
   }
 
-  // Método para disparar sin colisión en tiempo real: se calcula el tiempo de impacto
   fireBullet(user, target, options) {
     const source = user === "player" ? this.player : this.opponent;
     const bulletSpeed = options.speed;
-    const distance = Phaser.Math.Distance.Between(source.x, source.y, target.x, target.y);
-    const timeToHit = (distance / bulletSpeed) * 1000; // tiempo en ms
+    const startX = source.x;
+    const startY = source.y;
+    const targetX = target.x;
+    const targetY = target.y;
+    const distance = Phaser.Math.Distance.Between(startX, startY, targetX, targetY);
+    const timeToHit = (distance / bulletSpeed) * 1000;
 
-    // Crear animación de bala desde source hasta target
-    const bullet = this.add.sprite(source.x, source.y, options.texture || "bullet");
+    const bullet = this.add.sprite(startX, startY, options.texture || "bullet");
     bullet.setScale(0.4);
+    
     this.tweens.add({
       targets: bullet,
-      x: target.x,
-      y: target.y,
+      x: targetX,
+      y: targetY,
       duration: timeToHit,
       ease: "Linear",
-      onComplete: () => { bullet.destroy(); }
-    });
-
-    // Programar la aplicación del daño
-    this.time.delayedCall(timeToHit, () => {
-      this.applyDamage(target, options.damage);
+      onComplete: () => {
+        bullet.destroy();
+        const currentDistance = Phaser.Math.Distance.Between(
+          targetX, targetY, 
+          target.x, target.y
+        );
+        const HITBOX_RADIUS = 40;
+        
+        if (currentDistance <= HITBOX_RADIUS) {
+          this.applyDamage(target, options.damage);
+        }
+      }
     });
   }
 
   applyDamage(target, damage) {
+    if (target === this.player && this.gameState.playerInvulnerable) return;
+    if (target === this.opponent && this.gameState.opponentInvulnerable) return;
+
     if (target === this.player) {
       this.gameState.playerHealth = Phaser.Math.Clamp(this.gameState.playerHealth - damage, 0, 100);
     } else {
