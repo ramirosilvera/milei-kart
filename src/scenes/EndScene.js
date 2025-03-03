@@ -8,8 +8,18 @@ export default class EndScene extends Phaser.Scene {
     }
 
     create() {
-        // Fondo oscuro semi-transparente
-        this.add.rectangle(this.cameras.main.centerX, this.cameras.main.centerY, this.cameras.main.width, this.cameras.main.height, 0x000000, 0.7);
+        // Agregar imagen de fondo "menuBackground" centrada y detrás de todos los elementos
+        this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'menuBackground').setDepth(-2);
+
+        // Fondo oscuro semi-transparente para dar contraste
+        this.add.rectangle(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            this.cameras.main.width,
+            this.cameras.main.height,
+            0x000000,
+            0.7
+        ).setDepth(-1);
 
         // Contenedor de fin de juego
         const endContainer = this.add.container(this.cameras.main.centerX, this.cameras.main.centerY);
