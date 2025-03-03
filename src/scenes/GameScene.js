@@ -86,10 +86,11 @@ export default class GameScene extends Phaser.Scene {
     this.setupAttackButton();
   }
 
-  setupJoystick() {
+setupJoystick() {
     const baseX = 100, baseY = this.cameras.main.height - 100;
     const radius = 50;
     
+    // Botones direccionales
     this.upButton = this.add.circle(baseX, baseY - 70, radius, 0x333333, 0.8).setInteractive();
     this.add.text(baseX, baseY - 70, "↑", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
     
@@ -102,19 +103,69 @@ export default class GameScene extends Phaser.Scene {
     this.rightButton = this.add.circle(baseX + 70, baseY, radius, 0x333333, 0.8).setInteractive();
     this.add.text(baseX + 70, baseY, "→", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
 
+    // Botones diagonales
+    this.upLeftButton = this.add.circle(baseX - 50, baseY - 50, radius, 0x555555, 0.8).setInteractive();
+    this.add.text(baseX - 50, baseY - 50, "↖", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
+
+    this.upRightButton = this.add.circle(baseX + 50, baseY - 50, radius, 0x555555, 0.8).setInteractive();
+    this.add.text(baseX + 50, baseY - 50, "↗", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
+
+    this.downLeftButton = this.add.circle(baseX - 50, baseY + 50, radius, 0x555555, 0.8).setInteractive();
+    this.add.text(baseX - 50, baseY + 50, "↙", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
+
+    this.downRightButton = this.add.circle(baseX + 50, baseY + 50, radius, 0x555555, 0.8).setInteractive();
+    this.add.text(baseX + 50, baseY + 50, "↘", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
+
+    // Eventos de interacción
     this.upButton.on("pointerdown", () => { this.gameState.moveUp = true; });
     this.upButton.on("pointerup", () => { this.gameState.moveUp = false; });
-    this.upButton.on("pointerout", () => { this.gameState.moveUp = false; });
+
     this.downButton.on("pointerdown", () => { this.gameState.moveDown = true; });
     this.downButton.on("pointerup", () => { this.gameState.moveDown = false; });
-    this.downButton.on("pointerout", () => { this.gameState.moveDown = false; });
+
     this.leftButton.on("pointerdown", () => { this.gameState.moveLeft = true; });
     this.leftButton.on("pointerup", () => { this.gameState.moveLeft = false; });
-    this.leftButton.on("pointerout", () => { this.gameState.moveLeft = false; });
+
     this.rightButton.on("pointerdown", () => { this.gameState.moveRight = true; });
     this.rightButton.on("pointerup", () => { this.gameState.moveRight = false; });
-    this.rightButton.on("pointerout", () => { this.gameState.moveRight = false; });
-  }
+
+    // Eventos diagonales
+    this.upLeftButton.on("pointerdown", () => {
+        this.gameState.moveUp = true;
+        this.gameState.moveLeft = true;
+    });
+    this.upLeftButton.on("pointerup", () => {
+        this.gameState.moveUp = false;
+        this.gameState.moveLeft = false;
+    });
+
+    this.upRightButton.on("pointerdown", () => {
+        this.gameState.moveUp = true;
+        this.gameState.moveRight = true;
+    });
+    this.upRightButton.on("pointerup", () => {
+        this.gameState.moveUp = false;
+        this.gameState.moveRight = false;
+    });
+
+    this.downLeftButton.on("pointerdown", () => {
+        this.gameState.moveDown = true;
+        this.gameState.moveLeft = true;
+    });
+    this.downLeftButton.on("pointerup", () => {
+        this.gameState.moveDown = false;
+        this.gameState.moveLeft = false;
+    });
+
+    this.downRightButton.on("pointerdown", () => {
+        this.gameState.moveDown = true;
+        this.gameState.moveRight = true;
+    });
+    this.downRightButton.on("pointerup", () => {
+        this.gameState.moveDown = false;
+        this.gameState.moveRight = false;
+    });
+}
 
   setupAttackButton() {
     const btnX = this.cameras.main.width - 100, btnY = this.cameras.main.height - 100;
