@@ -3,6 +3,21 @@ export default class GameScene extends Phaser.Scene {
     super("GameScene");
   }
 
+  preload() {
+    // Cargar imágenes y audio (ajusta las rutas según tu proyecto)
+    this.load.image("track", "assets/track.png");
+    this.load.image("mileiKart", "assets/mileiKart.png");
+    this.load.image("opponentKart", "assets/opponentKart.png");
+    this.load.image("bullet", "assets/bullet.png");
+    this.load.image("powerUpDesinformation", "assets/powerUpDesinformation.png");
+    this.load.image("powerUpRetuits", "assets/powerUpRetuits.png");
+    this.load.image("powerUpShield", "assets/powerUpShield.png");
+    this.load.image("powerUpHostigamiento", "assets/powerUpHostigamiento.png");
+    this.load.image("spark", "assets/spark.png");
+    this.load.audio("bgMusic", "assets/bgMusic.mp3");
+    this.load.audio("attackSound", "assets/attackSound.mp3");
+  }
+
   create() {
     this.setupScene();
     this.setupPhysics();
@@ -15,10 +30,10 @@ export default class GameScene extends Phaser.Scene {
     this.gameState.attackCooldown = false;
     this.gameState.opponentAttackCooldown = false;
 
-    // Lanzamos la interfaz de usuario
+    // Lanzar la interfaz de usuario
     this.scene.launch("UIScene");
 
-    // Programamos la comprobación de recogida de power‑ups cada 500 ms
+    // Programar la comprobación de power‑up cada 500 ms
     this.time.addEvent({
       delay: 500,
       callback: this.checkPowerUpCollections,
@@ -28,8 +43,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupScene() {
-    this.add
-      .image(this.cameras.main.centerX, this.cameras.main.centerY, "track")
+    // Fondo y música
+    this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, "track")
       .setDisplaySize(this.cameras.main.width, this.cameras.main.height);
     this.bgMusic = this.sound.add("bgMusic", { loop: true, volume: 0.5 });
     this.bgMusic.play();
@@ -47,23 +62,29 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupPhysics() {
-    // Jugador
-    this.player = this.physics.add
-      .sprite(this.cameras.main.centerX, this.cameras.main.height - 100, "mileiKart")
+    // Crear jugador
+    this.player = this.physics.add.sprite(
+      this.cameras.main.centerX,
+      this.cameras.main.height - 100,
+      "mileiKart"
+    )
       .setScale(0.1)
       .setCollideWorldBounds(true)
       .setDrag(600, 600)
       .setMaxVelocity(300);
 
-    // Oponente
-    this.opponent = this.physics.add
-      .sprite(this.cameras.main.centerX, 100, "opponentKart")
+    // Crear oponente
+    this.opponent = this.physics.add.sprite(
+      this.cameras.main.centerX,
+      100,
+      "opponentKart"
+    )
       .setScale(0.1)
       .setBounce(1, 0)
       .setCollideWorldBounds(true)
       .setVelocityX(100);
 
-    // Los power‑ups se crean en un grupo (pero sin usar detección de colisiones de física)
+    // Los power‑ups se administran en un grupo
     this.powerUps = this.physics.add.group();
   }
 
@@ -73,100 +94,48 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupJoystick() {
-    const baseX = 100,
-      baseY = this.cameras.main.height - 100;
+    const baseX = 100, baseY = this.cameras.main.height - 100;
     const radius = 50;
-
     // Botón ↑
-    this.upButton = this.add
-      .circle(baseX, baseY - 70, radius, 0x333333, 0.8)
-      .setInteractive();
-    this.add
-      .text(baseX, baseY - 70, "↑", { fontSize: "32px", fill: "#fff" })
-      .setOrigin(0.5);
+    this.upButton = this.add.circle(baseX, baseY - 70, radius, 0x333333, 0.8).setInteractive();
+    this.add.text(baseX, baseY - 70, "↑", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
     // Botón ←
-    this.leftButton = this.add
-      .circle(baseX - 70, baseY, radius, 0x333333, 0.8)
-      .setInteractive();
-    this.add
-      .text(baseX - 70, baseY, "←", { fontSize: "32px", fill: "#fff" })
-      .setOrigin(0.5);
+    this.leftButton = this.add.circle(baseX - 70, baseY, radius, 0x333333, 0.8).setInteractive();
+    this.add.text(baseX - 70, baseY, "←", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
     // Botón ↓
-    this.downButton = this.add
-      .circle(baseX, baseY + 70, radius, 0x333333, 0.8)
-      .setInteractive();
-    this.add
-      .text(baseX, baseY + 70, "↓", { fontSize: "32px", fill: "#fff" })
-      .setOrigin(0.5);
+    this.downButton = this.add.circle(baseX, baseY + 70, radius, 0x333333, 0.8).setInteractive();
+    this.add.text(baseX, baseY + 70, "↓", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
     // Botón →
-    this.rightButton = this.add
-      .circle(baseX + 70, baseY, radius, 0x333333, 0.8)
-      .setInteractive();
-    this.add
-      .text(baseX + 70, baseY, "→", { fontSize: "32px", fill: "#fff" })
-      .setOrigin(0.5);
+    this.rightButton = this.add.circle(baseX + 70, baseY, radius, 0x333333, 0.8).setInteractive();
+    this.add.text(baseX + 70, baseY, "→", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
 
-    this.upButton.on("pointerdown", () => {
-      this.gameState.moveUp = true;
-    });
-    this.upButton.on("pointerup", () => {
-      this.gameState.moveUp = false;
-    });
-    this.upButton.on("pointerout", () => {
-      this.gameState.moveUp = false;
-    });
-    this.downButton.on("pointerdown", () => {
-      this.gameState.moveDown = true;
-    });
-    this.downButton.on("pointerup", () => {
-      this.gameState.moveDown = false;
-    });
-    this.downButton.on("pointerout", () => {
-      this.gameState.moveDown = false;
-    });
-    this.leftButton.on("pointerdown", () => {
-      this.gameState.moveLeft = true;
-    });
-    this.leftButton.on("pointerup", () => {
-      this.gameState.moveLeft = false;
-    });
-    this.leftButton.on("pointerout", () => {
-      this.gameState.moveLeft = false;
-    });
-    this.rightButton.on("pointerdown", () => {
-      this.gameState.moveRight = true;
-    });
-    this.rightButton.on("pointerup", () => {
-      this.gameState.moveRight = false;
-    });
-    this.rightButton.on("pointerout", () => {
-      this.gameState.moveRight = false;
-    });
+    // Eventos
+    this.upButton.on("pointerdown", () => { this.gameState.moveUp = true; });
+    this.upButton.on("pointerup", () => { this.gameState.moveUp = false; });
+    this.upButton.on("pointerout", () => { this.gameState.moveUp = false; });
+    this.downButton.on("pointerdown", () => { this.gameState.moveDown = true; });
+    this.downButton.on("pointerup", () => { this.gameState.moveDown = false; });
+    this.downButton.on("pointerout", () => { this.gameState.moveDown = false; });
+    this.leftButton.on("pointerdown", () => { this.gameState.moveLeft = true; });
+    this.leftButton.on("pointerup", () => { this.gameState.moveLeft = false; });
+    this.leftButton.on("pointerout", () => { this.gameState.moveLeft = false; });
+    this.rightButton.on("pointerdown", () => { this.gameState.moveRight = true; });
+    this.rightButton.on("pointerup", () => { this.gameState.moveRight = false; });
+    this.rightButton.on("pointerout", () => { this.gameState.moveRight = false; });
   }
 
   setupAttackButton() {
-    const btnX = this.cameras.main.width - 100,
-      btnY = this.cameras.main.height - 100;
+    const btnX = this.cameras.main.width - 100, btnY = this.cameras.main.height - 100;
     const radius = 60;
-    this.attackButton = this.add
-      .circle(btnX, btnY, radius, 0xff4444, 0.8)
-      .setInteractive();
-    this.add
-      .text(btnX, btnY, "ATACAR", {
-        fontSize: "20px",
-        fill: "#fff",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5);
+    this.attackButton = this.add.circle(btnX, btnY, radius, 0xff4444, 0.8).setInteractive();
+    this.add.text(btnX, btnY, "ATACAR", { fontSize: "20px", fill: "#fff", fontStyle: "bold" }).setOrigin(0.5);
     this.attackButton.on("pointerdown", () => {
       this.tweens.add({
         targets: this.attackButton,
         scale: 0.9,
         duration: 100,
         ease: "Power1",
-        onComplete: () => {
-          this.handleAttack();
-        },
+        onComplete: () => { this.handleAttack(); }
       });
     });
     this.attackButton.on("pointerup", () => {
@@ -174,7 +143,7 @@ export default class GameScene extends Phaser.Scene {
         targets: this.attackButton,
         scale: 1,
         duration: 100,
-        ease: "Power1",
+        ease: "Power1"
       });
     });
   }
@@ -214,14 +183,14 @@ export default class GameScene extends Phaser.Scene {
     if (this.gameState.opponentHealth <= 0) this.endGame("player");
   }
 
-  // Método para disparar sin colisión: se calcula el tiempo de impacto
+  // Método para disparar sin colisión en tiempo real: se calcula el tiempo de impacto
   fireBullet(user, target, options) {
     const source = user === "player" ? this.player : this.opponent;
     const bulletSpeed = options.speed;
     const distance = Phaser.Math.Distance.Between(source.x, source.y, target.x, target.y);
-    const timeToHit = (distance / bulletSpeed) * 1000; // ms
+    const timeToHit = (distance / bulletSpeed) * 1000; // tiempo en ms
 
-    // Crear animación de la bala (visualmente se mueve de source a target)
+    // Crear animación de bala desde source hasta target
     const bullet = this.add.sprite(source.x, source.y, options.texture || "bullet");
     bullet.setScale(0.4);
     this.tweens.add({
@@ -230,12 +199,10 @@ export default class GameScene extends Phaser.Scene {
       y: target.y,
       duration: timeToHit,
       ease: "Linear",
-      onComplete: () => {
-        bullet.destroy();
-      },
+      onComplete: () => { bullet.destroy(); }
     });
 
-    // Programar la aplicación del daño cuando se "impacte"
+    // Programar la aplicación del daño
     this.time.delayedCall(timeToHit, () => {
       this.applyDamage(target, options.damage);
     });
@@ -243,26 +210,16 @@ export default class GameScene extends Phaser.Scene {
 
   applyDamage(target, damage) {
     if (target === this.player) {
-      this.gameState.playerHealth = Phaser.Math.Clamp(
-        this.gameState.playerHealth - damage,
-        0,
-        100
-      );
+      this.gameState.playerHealth = Phaser.Math.Clamp(this.gameState.playerHealth - damage, 0, 100);
     } else {
-      this.gameState.opponentHealth = Phaser.Math.Clamp(
-        this.gameState.opponentHealth - damage,
-        0,
-        100
-      );
+      this.gameState.opponentHealth = Phaser.Math.Clamp(this.gameState.opponentHealth - damage, 0, 100);
     }
     this.registry.events.emit("updateHealth", {
       player: this.gameState.playerHealth,
       opponent: this.gameState.opponentHealth,
     });
     target.setTint(0xff0000);
-    this.time.delayedCall(300, () => {
-      target.clearTint();
-    });
+    this.time.delayedCall(300, () => { target.clearTint(); });
   }
 
   handleAttack() {
@@ -271,9 +228,7 @@ export default class GameScene extends Phaser.Scene {
     this.sound.play("attackSound");
     this.attackWithPowerUp("player", this.opponent, this.gameState.playerPowerUp.type);
     this.gameState.playerPowerUp = null;
-    this.time.delayedCall(1000, () => {
-      this.gameState.attackCooldown = false;
-    });
+    this.time.delayedCall(1000, () => { this.gameState.attackCooldown = false; });
   }
 
   opponentAttack() {
@@ -282,9 +237,7 @@ export default class GameScene extends Phaser.Scene {
     this.sound.play("attackSound");
     this.attackWithPowerUp("opponent", this.player, this.gameState.opponentPowerUp.type);
     this.gameState.opponentPowerUp = null;
-    this.time.delayedCall(1000, () => {
-      this.gameState.opponentAttackCooldown = false;
-    });
+    this.time.delayedCall(1000, () => { this.gameState.opponentAttackCooldown = false; });
   }
 
   attackWithPowerUp(user, target, powerUpType) {
@@ -398,6 +351,56 @@ export default class GameScene extends Phaser.Scene {
       ease: "Power1",
       onComplete: () => msg.destroy(),
     });
+  }
+
+  spawnPowerUp() {
+    const types = [
+      "powerUpDesinformation",
+      "powerUpRetuits",
+      "powerUpShield",
+      "powerUpHostigamiento",
+    ];
+    const randomType = Phaser.Utils.Array.GetRandom(types);
+    const powerUp = this.powerUps.create(
+      Phaser.Math.Between(100, this.cameras.main.width - 100),
+      Phaser.Math.Between(100, this.cameras.main.height - 100),
+      randomType
+    )
+      .setScale(0.2)
+      .setAlpha(1);
+    this.tweens.add({
+      targets: powerUp,
+      y: powerUp.y - 30,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+    });
+  }
+
+  opponentBehavior() {
+    if (!this.gameState.opponentPowerUp) {
+      let closestPowerUp = null;
+      let closestDistance = Infinity;
+      this.powerUps.getChildren().forEach(pu => {
+        if (!pu.active) return;
+        let d = Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, pu.x, pu.y);
+        if (d < closestDistance) {
+          closestDistance = d;
+          closestPowerUp = pu;
+        }
+      });
+      if (closestPowerUp) {
+        this.physics.moveToObject(this.opponent, closestPowerUp, 150);
+      } else {
+        this.physics.moveToObject(this.opponent, this.player, 100);
+      }
+    } else {
+      this.physics.moveToObject(this.opponent, this.player, 200);
+      let d = Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, this.player.x, this.player.y);
+      if (d < 300) {
+        this.opponentAttack();
+      }
+    }
   }
 
   endGame(winner) {
