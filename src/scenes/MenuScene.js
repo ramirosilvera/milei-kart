@@ -49,7 +49,10 @@ export default class MenuScene extends Phaser.Scene {
         });
 
         // Narrativa satírica centrada en el enfrentamiento con Kiciloff y la oposición
-        const narrative = "En un país sumido en el caos del escándalo cripto y los errores del gobierno, Milei lanza su desafío definitivo. Con su kart revolucionario, se enfrenta a Kiciloff y a la oposición, desviando las críticas y demostrando maniobras audaces en cada curva.";
+        const narrative = "En un mundo de crisis económica y escándalos cripto, Milei recurre a su arma favorita: la distracción mediática.
+Ataca al kirchnerismo con tweets incendiarios y promesas vacías, mientras su gobierno se hunde en el caos.
+¡Recoge power-ups como "Desinformación", "Tweets Falsos" y "Escudo de Privilegios" para desviar la atención
+y mantenerte en la carrera del poder! ¿Podrás sobrevivir a las trampas de la oposición y a tus propias falencias?";
         const narrativeContainer = this.add.container(this.cameras.main.centerX, 300);
         const narrativeBg = this.add.rectangle(0, 0, 700, 150, 0x000000, 0.7);
         const narrativeText = this.add.text(0, 0, narrative, {
