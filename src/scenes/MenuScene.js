@@ -70,7 +70,7 @@ export default class MenuScene extends Phaser.Scene {
             0,
             0,
             narrativeText.width + 40,
-            narrativeText.height + 30,
+            narrativeText.height + 10,
             0x000000,
             0.7
         ).setOrigin(0.5);
