@@ -4,18 +4,26 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     create() {
-        // Fondo con degradado moderno
-        this.createGradientBackground();
+        // Fondo: si la imagen no existe, se usa un color sólido como fallback
+        if (this.textures.exists('menuBackground')) {
+            this.add.image(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY,
+                'menuBackground'
+            ).setDisplaySize(this.cameras.main.width, this.cameras.main.height);
+        } else {
+            this.cameras.main.setBackgroundColor(0x000000);
+            console.error("Falta el asset 'menuBackground'");
+        }
 
-        // Logo con animación de entrada
+        // Logo con fade-in sutil
         if (this.textures.exists('logo')) {
-            const logo = this.add.image(this.cameras.main.centerX, 100, 'logo')
-                .setScale(0.6)
+            const logo = this.add.image(this.cameras.main.centerX, 80, 'logo')
+                .setScale(0.3)
                 .setAlpha(0);
             this.tweens.add({
                 targets: logo,
                 alpha: 1,
-                y: 150,
                 duration: 1000,
                 ease: 'Power2'
             });
@@ -23,147 +31,90 @@ export default class MenuScene extends Phaser.Scene {
             console.error("Falta el asset 'logo'");
         }
 
-        // Título con estilo moderno
-        const titleText = this.add.text(this.cameras.main.centerX, 250, "Milei Kart: La Distracción del Caos", {
-            fontFamily: '"Press Start 2P", cursive',
-            fontSize: '36px',
-            fill: '#FFD700',
-            stroke: '#8B0000',
-            strokeThickness: 4,
-            align: 'center'
-        }).setOrigin(0.5).setShadow(4, 4, "#000", 4, true, true);
-
-        // Animación de entrada del título
-        titleText.setAlpha(0);
+        // Título con animación y nuevo mensaje
+        const titleContainer = this.add.container(this.cameras.main.centerX, 150);
+        const titleBg = this.add.rectangle(0, 0, 600, 80, 0x000000, 0.7);
+        const titleText = this.add.text(0, 0, "Milei Kart: La Carrera de la Distracción", {
+            fontSize: '34px',
+            fill: '#32CD32',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        titleContainer.add([titleBg, titleText]);
+        titleContainer.alpha = 0;
         this.tweens.add({
-            targets: titleText,
+            targets: titleContainer,
             alpha: 1,
             duration: 1500,
             ease: 'Power2'
         });
 
-        // Narrativa actualizada con crítica política
-        const narrative = `
-En un mundo de crisis económica y escándalos cripto, Milei recurre a su arma favorita: la distracción mediática.
-Ataca al kirchnerismo con tweets incendiarios y promesas vacías, mientras su gobierno se hunde en el caos.
-¡Recoge power-ups como "Desinformación", "Tweets Falsos" y "Escudo de Privilegios" para desviar la atención
-y mantenerte en la carrera del poder! ¿Podrás sobrevivir a las trampas de la oposición y a tus propias falencias?
-        `;
-        const narrativeText = this.add.text(this.cameras.main.centerX, 350, narrative, {
-            fontFamily: 'Arial',
-            fontSize: '20px',
-            fill: '#FFFFFF',
+        // Narrativa satírica centrada en el enfrentamiento con Kiciloff y la oposición
+        const narrative = "En un país sumido en el caos del escándalo cripto y los errores del gobierno, Milei lanza su desafío definitivo. Con su kart revolucionario, se enfrenta a Kiciloff y a la oposición, desviando las críticas y demostrando maniobras audaces en cada curva.";
+        const narrativeContainer = this.add.container(this.cameras.main.centerX, 300);
+        const narrativeBg = this.add.rectangle(0, 0, 700, 150, 0x000000, 0.7);
+        const narrativeText = this.add.text(0, 0, narrative, {
+            fontSize: '22px',
+            fill: '#fff',
             align: 'center',
-            wordWrap: { width: this.cameras.main.width * 0.8 },
-            lineSpacing: 10
-        }).setOrigin(0.5).setShadow(2, 2, "#000", 2, true, true);
-
-        // Fondo semitransparente para la narrativa
-        const narrativeBg = this.add.rectangle(
-            this.cameras.main.centerX,
-            350,
-            narrativeText.width + 40,
-            narrativeText.height + 20,
-            0x000000,
-            0.6
-        ).setOrigin(0.5);
-
-        // Animación de entrada de la narrativa
-        narrativeText.setAlpha(0);
+            wordWrap: { width: 680 }
+        }).setOrigin(0.5);
+        narrativeContainer.add([narrativeBg, narrativeText]);
+        narrativeContainer.alpha = 0;
         this.tweens.add({
-            targets: [narrativeBg, narrativeText],
+            targets: narrativeContainer,
             alpha: 1,
             duration: 1500,
             delay: 500,
             ease: 'Power2'
         });
 
-        // Botón "JUGAR" con estilo moderno
-        const buttonText = this.add.text(this.cameras.main.centerX, 550, "INICIAR LA DISTRACCIÓN", {
-            fontFamily: '"Press Start 2P", cursive',
-            fontSize: '24px',
-            fill: '#FFFFFF',
-            stroke: '#8B0000',
-            strokeThickness: 3,
-            align: 'center'
-        }).setOrigin(0.5).setShadow(2, 2, "#000", 2, true, true);
-
-        const buttonBg = this.add.rectangle(
-            this.cameras.main.centerX,
-            550,
-            buttonText.width + 60,
-            buttonText.height + 30,
-            0xFF4500,
-            1
-        ).setOrigin(0.5)
-         .setInteractive({ useHandCursor: true });
-
-        // Animación de entrada del botón
-        buttonText.setAlpha(0);
-        buttonBg.setAlpha(0);
+        // Botón "JUGAR" con animaciones de interacción (hover, click)
+        const buttonContainer = this.add.container(this.cameras.main.centerX, 500);
+        const buttonBg = this.add.rectangle(0, 0, 220, 70, 0xFF2222, 1)
+            .setStrokeStyle(3, 0xffffff);
+        const buttonText = this.add.text(0, 0, "JUGAR", {
+            fontSize: '28px',
+            fill: '#fff'
+        }).setOrigin(0.5);
+        buttonContainer.add([buttonBg, buttonText]);
+        buttonContainer.alpha = 0;
         this.tweens.add({
-            targets: [buttonBg, buttonText],
+            targets: buttonContainer,
             alpha: 1,
             duration: 1500,
             delay: 1000,
             ease: 'Power2'
         });
 
-        // Interactividad del botón con animación
+        // Interactividad en el botón con efectos de escalado y sonido
+        buttonBg.setInteractive({ useHandCursor: true });
         buttonBg.on('pointerdown', () => {
             this.sound.play('menuSelect');
             this.tweens.add({
-                targets: [buttonBg, buttonText],
+                targets: buttonContainer,
                 scale: 0.9,
                 duration: 100,
                 yoyo: true,
-                ease: 'Power2',
                 onComplete: () => {
                     this.scene.start('GameScene');
                 }
             });
         });
-
         buttonBg.on('pointerover', () => {
             this.tweens.add({
-                targets: [buttonBg, buttonText],
-                scale: 1.1,
+                targets: buttonContainer,
+                scale: 1.05,
                 duration: 200,
                 ease: 'Power2'
             });
         });
-
         buttonBg.on('pointerout', () => {
             this.tweens.add({
-                targets: [buttonBg, buttonText],
+                targets: buttonContainer,
                 scale: 1,
                 duration: 200,
                 ease: 'Power2'
             });
         });
-    }
-
-    createGradientBackground() {
-        const canvasTexture = this.textures.createCanvas('gradientBackground', this.cameras.main.width, this.cameras.main.height);
-        const ctx = canvasTexture.getContext('2d');
-
-        // Crear un degradado radial
-        const gradient = ctx.createRadialGradient(
-            this.cameras.main.centerX,
-            this.cameras.main.centerY,
-            0,
-            this.cameras.main.centerX,
-            this.cameras.main.centerY,
-            Math.max(this.cameras.main.width, this.cameras.main.height) / 2
-        );
-        gradient.addColorStop(0, '#1E1E1E');
-        gradient.addColorStop(1, '#000000');
-
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, this.cameras.main.width, this.cameras.main.height);
-        canvasTexture.refresh();
-
-        // Añadir el fondo al menú
-        this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'gradientBackground');
     }
 }
