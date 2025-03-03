@@ -4,7 +4,7 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     create() {
-        // Fondo: si la imagen no existe, se usa un color sólido como fallback
+        // Fondo: verificamos que la imagen exista y la colocamos de fondo
         if (this.textures.exists('menuBackground')) {
             this.add.image(
                 this.cameras.main.centerX,
@@ -12,14 +12,14 @@ export default class MenuScene extends Phaser.Scene {
                 'menuBackground'
             ).setDisplaySize(this.cameras.main.width, this.cameras.main.height);
         } else {
-            this.cameras.main.setBackgroundColor(0x000000);
+            this.cameras.main.setBackgroundColor(0x222222); // Fondo gris oscuro si falta la imagen
             console.error("Falta el asset 'menuBackground'");
         }
 
-        // Logo con fade-in sutil
+        // Logo
         if (this.textures.exists('logo')) {
-            const logo = this.add.image(this.cameras.main.centerX, 80, 'logo')
-                .setScale(0.3)
+            const logo = this.add.image(this.cameras.main.centerX, 100, 'logo')
+                .setScale(0.6)
                 .setAlpha(0);
             this.tweens.add({
                 targets: logo,
@@ -31,93 +31,88 @@ export default class MenuScene extends Phaser.Scene {
             console.error("Falta el asset 'logo'");
         }
 
-        // Título con animación y nuevo mensaje
-        const titleContainer = this.add.container(this.cameras.main.centerX, 150);
-        const titleBg = this.add.rectangle(0, 0, 600, 80, 0x000000, 0.7);
-        const titleText = this.add.text(0, 0, "Milei Kart: La Carrera de la Distracción", {
-            fontSize: '34px',
-            fill: '#32CD32',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-        titleContainer.add([titleBg, titleText]);
-        titleContainer.alpha = 0;
-        this.tweens.add({
-            targets: titleContainer,
-            alpha: 1,
-            duration: 1500,
-            ease: 'Power2'
-        });
+        // Título del juego
+        const titleText = this.add.text(this.cameras.main.centerX, 180, "Milei Kart", {
+            fontFamily: '"Arcade Classic", sans-serif',
+            fontSize: '48px',
+            fill: '#FFD700', // Dorado para resaltar
+            stroke: '#000',
+            strokeThickness: 6,
+            align: 'center'
+        }).setOrigin(0.5).setShadow(3, 3, "#000", 3, true, true);
 
-        // Narrativa satírica centrada en el enfrentamiento con Kiciloff y la oposición
-        const narrative = "En un mundo de crisis económica y escándalos cripto, Milei recurre a su arma favorita: la distracción mediática.
-Ataca al kirchnerismo con tweets incendiarios y promesas vacías, mientras su gobierno se hunde en el caos.
-¡Recoge power-ups como "Desinformación", "Tweets Falsos" y "Escudo de Privilegios" para desviar la atención
-y mantenerte en la carrera del poder! ¿Podrás sobrevivir a las trampas de la oposición y a tus propias falencias?";
-        const narrativeContainer = this.add.container(this.cameras.main.centerX, 300);
-        const narrativeBg = this.add.rectangle(0, 0, 700, 150, 0x000000, 0.7);
-        const narrativeText = this.add.text(0, 0, narrative, {
-            fontSize: '22px',
-            fill: '#fff',
+        // Texto de narrativa
+        const narrative = "En un mundo de crisis económica y escándalos cripto, Milei recurre a su arma favorita: la distracción mediática. Ataca al kirchnerismo con tweets incendiarios y promesas vacías, mientras su gobierno se hunde en el caos. ¡Recoge power-ups como "Desinformación", "Tweets Falsos" y "Escudo de Privilegios" para desviar la atención y mantenerte en la carrera del poder! ¿Podrás sobrevivir a las trampas de la oposición y a tus propias falencias?";
+        const narrativeText = this.add.text(this.cameras.main.centerX, 250, narrative, {
+            fontFamily: 'Arial',
+            fontSize: '20px',
+            fill: '#FFFFFF',
             align: 'center',
-            wordWrap: { width: 680 }
+            wordWrap: { width: this.cameras.main.width * 0.8 }
         }).setOrigin(0.5);
-        narrativeContainer.add([narrativeBg, narrativeText]);
-        narrativeContainer.alpha = 0;
-        this.tweens.add({
-            targets: narrativeContainer,
-            alpha: 1,
-            duration: 1500,
-            delay: 500,
-            ease: 'Power2'
-        });
 
-        // Botón "JUGAR" con animaciones de interacción (hover, click)
-        const buttonContainer = this.add.container(this.cameras.main.centerX, 500);
-        const buttonBg = this.add.rectangle(0, 0, 220, 70, 0xFF2222, 1)
-            .setStrokeStyle(3, 0xffffff);
-        const buttonText = this.add.text(0, 0, "JUGAR", {
+        // Mini Tutorial
+        const tutorial = "Instrucciones:\n- Recoge powerups para atacar y defenderte.\n- Usa tus habilidades para ganar la carrera.";
+        const tutorialText = this.add.text(this.cameras.main.centerX, 320, tutorial, {
+            fontFamily: 'Arial',
+            fontSize: '18px',
+            fill: '#DDDDDD',
+            align: 'center',
+            wordWrap: { width: this.cameras.main.width * 0.8 }
+        }).setOrigin(0.5);
+
+        // Botón de JUGAR
+        const buttonBg = this.add.rectangle(
+            this.cameras.main.centerX,
+            400,
+            200, 60,
+            0xFF2222, // Rojo llamativo
+            1
+        ).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+        const buttonText = this.add.text(this.cameras.main.centerX, 400, "JUGAR", {
+            fontFamily: '"Arcade Classic", sans-serif',
             fontSize: '28px',
-            fill: '#fff'
+            fill: '#FFF',
+            stroke: '#000',
+            strokeThickness: 3
         }).setOrigin(0.5);
-        buttonContainer.add([buttonBg, buttonText]);
-        buttonContainer.alpha = 0;
-        this.tweens.add({
-            targets: buttonContainer,
-            alpha: 1,
-            duration: 1500,
-            delay: 1000,
-            ease: 'Power2'
-        });
 
-        // Interactividad en el botón con efectos de escalado y sonido
-        buttonBg.setInteractive({ useHandCursor: true });
+        // Animaciones del botón
         buttonBg.on('pointerdown', () => {
             this.sound.play('menuSelect');
             this.tweens.add({
-                targets: buttonContainer,
+                targets: [buttonBg, buttonText],
                 scale: 0.9,
                 duration: 100,
                 yoyo: true,
+                ease: 'Power2',
                 onComplete: () => {
                     this.scene.start('GameScene');
                 }
             });
         });
+
         buttonBg.on('pointerover', () => {
             this.tweens.add({
-                targets: buttonContainer,
-                scale: 1.05,
+                targets: buttonBg,
+                scale: 1.1,
                 duration: 200,
                 ease: 'Power2'
             });
         });
+
         buttonBg.on('pointerout', () => {
             this.tweens.add({
-                targets: buttonContainer,
+                targets: buttonBg,
                 scale: 1,
                 duration: 200,
                 ease: 'Power2'
             });
         });
+
+        // Ajuste del orden de los elementos
+        this.children.bringToTop(buttonBg);
+        this.children.bringToTop(buttonText);
     }
 }
