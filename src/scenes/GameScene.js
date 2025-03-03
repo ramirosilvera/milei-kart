@@ -16,9 +16,25 @@ export default class GameScene extends Phaser.Scene {
 
     // Lanzamos la UIScene para la interfaz de usuario
     this.scene.launch("UIScene");
+
+    // Programamos las comprobaciones manuales de "colisiones" cada 100ms
+    this.time.addEvent({
+      delay: 100,
+      callback: this.checkBulletImpacts,
+      callbackScope: this,
+      loop: true,
+    });
+    this.time.addEvent({
+      delay: 100,
+      callback: this.checkPowerUpCollections,
+      callbackScope: this,
+      loop: true,
+    });
   }
 
-  // Configuración básica y estado inicial
+  // ─────────────────────────────
+  // Configuración básica del escenario y estado inicial
+  // ─────────────────────────────
   setupScene() {
     // Fondo y música
     this.add.image(
@@ -45,7 +61,9 @@ export default class GameScene extends Phaser.Scene {
     this.gameOver = false;
   }
 
-  // Se crea el jugador y el oponente (sin colisiones automáticas)
+  // ─────────────────────────────
+  // Creación de jugador, oponente y grupos (sin usar overlap de física)
+  // ─────────────────────────────
   setupPhysics() {
     // Jugador
     this.player = this.physics.add.sprite(
@@ -69,7 +87,7 @@ export default class GameScene extends Phaser.Scene {
       .setCollideWorldBounds(true)
       .setVelocityX(100);
 
-    // Grupos para balas y power‑ups (no se usan colisiones físicas)
+    // Grupos para balas y power‑ups (no se usan colisiones automáticas)
     this.playerBullets = this.physics.add.group();
     this.opponentBullets = this.physics.add.group();
     this.powerUps = this.physics.add.group();
@@ -89,102 +107,49 @@ export default class GameScene extends Phaser.Scene {
     const radius = 50; // Botones circulares grandes
 
     // Botón ↑
-    this.upButton = this.add
-      .circle(baseX, baseY - 70, radius, 0x333333, 0.8)
-      .setInteractive();
-    this.add
-      .text(baseX, baseY - 70, "↑", { fontSize: "32px", fill: "#fff" })
-      .setOrigin(0.5);
-
+    this.upButton = this.add.circle(baseX, baseY - 70, radius, 0x333333, 0.8).setInteractive();
+    this.add.text(baseX, baseY - 70, "↑", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
     // Botón ←
-    this.leftButton = this.add
-      .circle(baseX - 70, baseY, radius, 0x333333, 0.8)
-      .setInteractive();
-    this.add
-      .text(baseX - 70, baseY, "←", { fontSize: "32px", fill: "#fff" })
-      .setOrigin(0.5);
-
+    this.leftButton = this.add.circle(baseX - 70, baseY, radius, 0x333333, 0.8).setInteractive();
+    this.add.text(baseX - 70, baseY, "←", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
     // Botón ↓
-    this.downButton = this.add
-      .circle(baseX, baseY + 70, radius, 0x333333, 0.8)
-      .setInteractive();
-    this.add
-      .text(baseX, baseY + 70, "↓", { fontSize: "32px", fill: "#fff" })
-      .setOrigin(0.5);
-
+    this.downButton = this.add.circle(baseX, baseY + 70, radius, 0x333333, 0.8).setInteractive();
+    this.add.text(baseX, baseY + 70, "↓", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
     // Botón →
-    this.rightButton = this.add
-      .circle(baseX + 70, baseY, radius, 0x333333, 0.8)
-      .setInteractive();
-    this.add
-      .text(baseX + 70, baseY, "→", { fontSize: "32px", fill: "#fff" })
-      .setOrigin(0.5);
+    this.rightButton = this.add.circle(baseX + 70, baseY, radius, 0x333333, 0.8).setInteractive();
+    this.add.text(baseX + 70, baseY, "→", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
 
     // Eventos para cada botón
-    this.upButton.on("pointerdown", () => {
-      this.gameState.moveUp = true;
-    });
-    this.upButton.on("pointerup", () => {
-      this.gameState.moveUp = false;
-    });
-    this.upButton.on("pointerout", () => {
-      this.gameState.moveUp = false;
-    });
+    this.upButton.on("pointerdown", () => { this.gameState.moveUp = true; });
+    this.upButton.on("pointerup", () => { this.gameState.moveUp = false; });
+    this.upButton.on("pointerout", () => { this.gameState.moveUp = false; });
 
-    this.downButton.on("pointerdown", () => {
-      this.gameState.moveDown = true;
-    });
-    this.downButton.on("pointerup", () => {
-      this.gameState.moveDown = false;
-    });
-    this.downButton.on("pointerout", () => {
-      this.gameState.moveDown = false;
-    });
+    this.downButton.on("pointerdown", () => { this.gameState.moveDown = true; });
+    this.downButton.on("pointerup", () => { this.gameState.moveDown = false; });
+    this.downButton.on("pointerout", () => { this.gameState.moveDown = false; });
 
-    this.leftButton.on("pointerdown", () => {
-      this.gameState.moveLeft = true;
-    });
-    this.leftButton.on("pointerup", () => {
-      this.gameState.moveLeft = false;
-    });
-    this.leftButton.on("pointerout", () => {
-      this.gameState.moveLeft = false;
-    });
+    this.leftButton.on("pointerdown", () => { this.gameState.moveLeft = true; });
+    this.leftButton.on("pointerup", () => { this.gameState.moveLeft = false; });
+    this.leftButton.on("pointerout", () => { this.gameState.moveLeft = false; });
 
-    this.rightButton.on("pointerdown", () => {
-      this.gameState.moveRight = true;
-    });
-    this.rightButton.on("pointerup", () => {
-      this.gameState.moveRight = false;
-    });
-    this.rightButton.on("pointerout", () => {
-      this.gameState.moveRight = false;
-    });
+    this.rightButton.on("pointerdown", () => { this.gameState.moveRight = true; });
+    this.rightButton.on("pointerup", () => { this.gameState.moveRight = false; });
+    this.rightButton.on("pointerout", () => { this.gameState.moveRight = false; });
   }
 
   setupAttackButton() {
     const btnX = this.cameras.main.width - 100,
       btnY = this.cameras.main.height - 100;
     const radius = 60;
-    this.attackButton = this.add
-      .circle(btnX, btnY, radius, 0xff4444, 0.8)
-      .setInteractive();
-    this.add
-      .text(btnX, btnY, "ATACAR", {
-        fontSize: "20px",
-        fill: "#fff",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5);
+    this.attackButton = this.add.circle(btnX, btnY, radius, 0xff4444, 0.8).setInteractive();
+    this.add.text(btnX, btnY, "ATACAR", { fontSize: "20px", fill: "#fff", fontStyle: "bold" }).setOrigin(0.5);
     this.attackButton.on("pointerdown", () => {
       this.tweens.add({
         targets: this.attackButton,
         scale: 0.9,
         duration: 100,
         ease: "Power1",
-        onComplete: () => {
-          this.handleAttack();
-        },
+        onComplete: () => { this.handleAttack(); }
       });
     });
     this.attackButton.on("pointerup", () => {
@@ -192,7 +157,7 @@ export default class GameScene extends Phaser.Scene {
         targets: this.attackButton,
         scale: 1,
         duration: 100,
-        ease: "Power1",
+        ease: "Power1"
       });
     });
   }
@@ -210,7 +175,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   // ─────────────────────────────
-  // Ciclo principal
+  // Ciclo principal: movimiento, comportamiento y comprobación manual
   // ─────────────────────────────
   update() {
     if (this.gameOver) return;
@@ -235,16 +200,14 @@ export default class GameScene extends Phaser.Scene {
     // Comportamiento básico del oponente
     this.opponentBehavior();
 
-    // Comprobación manual de impactos (sin colisiones físicas)
-    this.checkBulletImpacts();
-    this.checkPowerUpCollections();
-
     // Fin del juego
     if (this.gameState.playerHealth <= 0) this.endGame("opponent");
     if (this.gameState.opponentHealth <= 0) this.endGame("player");
   }
 
-  // Comprobación manual de impactos de balas por distancia
+  // ─────────────────────────────
+  // Comprobación manual de impactos de balas (cada 100ms programado)
+  // ─────────────────────────────
   checkBulletImpacts() {
     const hitThreshold = 30;
     // Balas del jugador contra el oponente
@@ -265,7 +228,9 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  // Comprobación manual de recogida de power‑ups
+  // ─────────────────────────────
+  // Comprobación manual de recogida de power‑ups (cada 100ms programado)
+  // ─────────────────────────────
   checkPowerUpCollections() {
     const collectThreshold = 40;
     this.powerUps.getChildren().forEach((powerUp) => {
@@ -286,7 +251,7 @@ export default class GameScene extends Phaser.Scene {
   // ─────────────────────────────
   opponentBehavior() {
     if (!this.gameState.opponentPowerUp) {
-      // Busca el power‑up más cercano
+      // Si no tiene power‑up, busca el más cercano
       let closestPowerUp = null;
       let closestDistance = Infinity;
       this.powerUps.getChildren().forEach((pu) => {
@@ -304,7 +269,7 @@ export default class GameScene extends Phaser.Scene {
         this.physics.moveToObject(this.opponent, this.player, 100);
       }
     } else {
-      // Con power‑up, se acerca al jugador y ataca en rango
+      // Con power‑up, se acerca al jugador y ataca si está en rango
       this.physics.moveToObject(this.opponent, this.player, 200);
       let d = Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, this.player.x, this.player.y);
       if (d < 300) {
@@ -314,7 +279,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   // ─────────────────────────────
-  // Funciones de ataque y balas
+  // Funciones de ataque y creación de balas
   // ─────────────────────────────
   handleAttack() {
     if (this.gameState.attackCooldown || !this.gameState.playerPowerUp) return;
@@ -322,9 +287,7 @@ export default class GameScene extends Phaser.Scene {
     this.sound.play("attackSound");
     this.attackWithPowerUp("player", this.opponent, this.gameState.playerPowerUp.type);
     this.gameState.playerPowerUp = null;
-    this.time.delayedCall(1000, () => {
-      this.gameState.attackCooldown = false;
-    });
+    this.time.delayedCall(1000, () => { this.gameState.attackCooldown = false; });
   }
 
   opponentAttack() {
@@ -333,9 +296,7 @@ export default class GameScene extends Phaser.Scene {
     this.sound.play("attackSound");
     this.attackWithPowerUp("opponent", this.player, this.gameState.opponentPowerUp.type);
     this.gameState.opponentPowerUp = null;
-    this.time.delayedCall(1000, () => {
-      this.gameState.opponentAttackCooldown = false;
-    });
+    this.time.delayedCall(1000, () => { this.gameState.opponentAttackCooldown = false; });
   }
 
   attackWithPowerUp(user, target, powerUpType) {
@@ -405,9 +366,7 @@ export default class GameScene extends Phaser.Scene {
       repeat: -1,
     });
     // Destruir la bala después de 3 segundos si no impacta
-    this.time.delayedCall(3000, () => {
-      if (bullet.active) bullet.destroy();
-    });
+    this.time.delayedCall(3000, () => { if (bullet.active) bullet.destroy(); });
     return bullet;
   }
 
@@ -493,7 +452,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   // ─────────────────────────────
-  // Power‑up: Spawn y Recolección (sin colisiones físicas)
+  // Spawn y recogida de power‑ups (sin colisiones físicas)
   // ─────────────────────────────
   spawnPowerUp() {
     const types = [
@@ -525,33 +484,11 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  // Se muestran mensajes sensacionalistas para cada power‑up recogido  
-  // (texto grande, con sombra y animación de subida)
-  showPowerUpMessage(message, x, y) {
-    const msg = this.add
-      .text(x, y, message, {
-        fontSize: "40px",
-        fill: "#ffcc00",
-        fontStyle: "bold",
-        stroke: "#000",
-        strokeThickness: 6,
-      })
-      .setOrigin(0.5);
-    this.tweens.add({
-      targets: msg,
-      y: y - 50,
-      alpha: 0,
-      duration: 1500,
-      ease: "Power1",
-      onComplete: () => msg.destroy(),
-    });
-  }
-
   collectPowerUp(sprite, powerUp) {
     if (sprite === this.player && !this.gameState.playerPowerUp) {
       const type = powerUp.texture.key;
       this.gameState.playerPowerUp = { type };
-      // Muestra el mensaje sensacionalista para el power‑up recogido
+      // Mostrar mensaje sensacionalista para el power‑up recogido
       this.showPowerUpMessage(this.getPowerUpMessage(type), sprite.x, sprite.y - 50);
       powerUp.destroy();
     }
