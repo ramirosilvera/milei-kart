@@ -47,12 +47,10 @@ export default class GameScene extends Phaser.Scene {
     this.gameState = {
       playerHealth: 100,
       opponentHealth: 100,
-      moveLeft: false,
-      moveRight: false,
-      moveUp: false,
-      moveDown: false,
+      // Vector del joystick para el movimiento analógico
+      joystickVector: new Phaser.Math.Vector2(0, 0),
       playerInvulnerable: false,
-      opponentInvulnerable: false
+      opponentInvulnerable: false,
     };
     this.gameOver = false;
   }
@@ -86,101 +84,94 @@ export default class GameScene extends Phaser.Scene {
     this.setupAttackButton();
   }
 
-// Reemplaza la función setupJoystick actual por la siguiente versión:
-setupJoystick() {
-  const baseX = 100, baseY = this.cameras.main.height - 100;
-  const baseRadius = 60; // Radio de la base del joystick
+  // --- Joystick virtual (palanca deslizante) ---
+  setupJoystick() {
+    const baseX = 100,
+      baseY = this.cameras.main.height - 100;
+    const baseRadius = 60; // Radio de la base del joystick
 
-  // Crea la base del joystick
-  this.joystickBase = this.add.circle(baseX, baseY, baseRadius, 0x888888, 0.6)
-    .setInteractive()
-    .setScrollFactor(0)
-    .setDepth(1);
+    // Crea la base circular del joystick
+    this.joystickBase = this.add.circle(baseX, baseY, baseRadius, 0x888888, 0.6)
+      .setInteractive()
+      .setScrollFactor(0)
+      .setDepth(1);
+    // Guarda el radio para usarlo al limitar el movimiento
+    this.joystickBaseRadius = baseRadius;
 
-  // Crea la palanca (knob) del joystick, un poco más pequeña
-  const knobRadius = 30;
-  this.joystickKnob = this.add.circle(baseX, baseY, knobRadius, 0xcccccc, 0.8)
-    .setScrollFactor(0)
-    .setDepth(2);
+    // Crea el knob (palanca) más pequeño
+    const knobRadius = 30;
+    this.joystickKnob = this.add.circle(baseX, baseY, knobRadius, 0xcccccc, 0.8)
+      .setScrollFactor(0)
+      .setDepth(2);
 
-  // Estado del joystick: vector de dirección y bandera para saber si está activo
-  this.gameState.joystickVector = new Phaser.Math.Vector2(0, 0);
-  this.joystickActive = false;
-
-  // Eventos de entrada para el joystick
-  this.input.on('pointerdown', (pointer) => {
-    // Si el toque inicia dentro del área de la base del joystick, activarlo
-    const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, baseX, baseY);
-    if (dist <= baseRadius) {
-      this.joystickActive = true;
-      this.updateJoystick(pointer);
-    }
-  });
-
-  this.input.on('pointermove', (pointer) => {
-    if (this.joystickActive) {
-      this.updateJoystick(pointer);
-    }
-  });
-
-  this.input.on('pointerup', () => {
-    // Al soltar, se reinicia el joystick
+    // Inicializa el vector del joystick y bandera de activación
+    this.gameState.joystickVector = new Phaser.Math.Vector2(0, 0);
     this.joystickActive = false;
-    this.gameState.joystickVector.set(0, 0);
-    this.joystickKnob.setPosition(baseX, baseY);
-  });
-},
 
-// Función auxiliar para actualizar la posición de la palanca del joystick
-updateJoystick(pointer) {
-  const baseX = this.joystickBase.x;
-  const baseY = this.joystickBase.y;
-  const maxDistance = 60; // Radio máximo permitido (igual que baseRadius)
+    // Eventos de entrada: activa el joystick si se toca dentro de la base
+    this.input.on("pointerdown", (pointer) => {
+      const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, baseX, baseY);
+      if (dist <= baseRadius) {
+        this.joystickActive = true;
+        this.updateJoystick(pointer);
+      }
+    });
 
-  const dx = pointer.x - baseX;
-  const dy = pointer.y - baseY;
-  const distance = Phaser.Math.Distance.Between(pointer.x, pointer.y, baseX, baseY);
-  // Limita la distancia máxima para que el knob no se salga de la base
-  const clampedDistance = Math.min(distance, maxDistance);
-  const angle = Math.atan2(dy, dx);
-  const knobX = baseX + clampedDistance * Math.cos(angle);
-  const knobY = baseY + clampedDistance * Math.sin(angle);
-  this.joystickKnob.setPosition(knobX, knobY);
+    this.input.on("pointermove", (pointer) => {
+      if (this.joystickActive) {
+        this.updateJoystick(pointer);
+      }
+    });
 
-  // Normaliza el vector resultante para que sus componentes estén entre -1 y 1
-  const normX = (knobX - baseX) / maxDistance;
-  const normY = (knobY - baseY) / maxDistance;
-  this.gameState.joystickVector.set(normX, normY);
-},
+    this.input.on("pointerup", () => {
+      // Al soltar, se reinicia el joystick
+      this.joystickActive = false;
+      this.gameState.joystickVector.set(0, 0);
+      this.joystickKnob.setPosition(baseX, baseY);
+    });
+  }
 
-// Modifica el update() para utilizar el vector del joystick en lugar de las banderas individuales:
-update() {
-  if (this.gameOver) return;
+  updateJoystick(pointer) {
+    const baseX = this.joystickBase.x;
+    const baseY = this.joystickBase.y;
+    const maxDistance = this.joystickBaseRadius;
 
-  const acceleration = 600;
-  const vec = this.gameState.joystickVector;
-  // Aplica la aceleración según el vector del joystick
-  this.player.setAccelerationX(vec.x * acceleration);
-  this.player.setAccelerationY(vec.y * acceleration);
+    const dx = pointer.x - baseX;
+    const dy = pointer.y - baseY;
+    const distance = Phaser.Math.Distance.Between(pointer.x, pointer.y, baseX, baseY);
+    // Limita la distancia máxima para que el knob no se salga de la base
+    const clampedDistance = Math.min(distance, maxDistance);
+    const angle = Math.atan2(dy, dx);
+    const knobX = baseX + clampedDistance * Math.cos(angle);
+    const knobY = baseY + clampedDistance * Math.sin(angle);
+    this.joystickKnob.setPosition(knobX, knobY);
 
-  // Comportamiento del oponente y chequeo de condiciones de fin de juego
-  this.opponentBehavior();
-  if (this.gameState.playerHealth <= 0) this.endGame("opponent");
-  if (this.gameState.opponentHealth <= 0) this.endGame("player");
-}
+    // Normaliza el vector para obtener valores entre -1 y 1
+    const normX = (knobX - baseX) / maxDistance;
+    const normY = (knobY - baseY) / maxDistance;
+    this.gameState.joystickVector.set(normX, normY);
+  }
+  // --- Fin joystick ---
 
   setupAttackButton() {
-    const btnX = this.cameras.main.width - 100, btnY = this.cameras.main.height - 100;
+    const btnX = this.cameras.main.width - 100,
+      btnY = this.cameras.main.height - 100;
     const radius = 60;
     this.attackButton = this.add.circle(btnX, btnY, radius, 0xff4444, 0.8).setInteractive();
-    this.add.text(btnX, btnY, "ATACAR", { fontSize: "20px", fill: "#fff", fontStyle: "bold" }).setOrigin(0.5);
+    this.add.text(btnX, btnY, "ATACAR", {
+      fontSize: "20px",
+      fill: "#fff",
+      fontStyle: "bold",
+    }).setOrigin(0.5);
     this.attackButton.on("pointerdown", () => {
       this.tweens.add({
         targets: this.attackButton,
         scale: 0.9,
         duration: 100,
         ease: "Power1",
-        onComplete: () => { this.handleAttack(); }
+        onComplete: () => {
+          this.handleAttack();
+        },
       });
     });
     this.attackButton.on("pointerup", () => {
@@ -188,7 +179,7 @@ update() {
         targets: this.attackButton,
         scale: 1,
         duration: 100,
-        ease: "Power1"
+        ease: "Power1",
       });
     });
   }
@@ -206,20 +197,10 @@ update() {
     if (this.gameOver) return;
 
     const acceleration = 600;
-    this.player.setAccelerationX(
-      this.gameState.moveLeft
-        ? -acceleration
-        : this.gameState.moveRight
-        ? acceleration
-        : 0
-    );
-    this.player.setAccelerationY(
-      this.gameState.moveUp
-        ? -acceleration
-        : this.gameState.moveDown
-        ? acceleration
-        : 0
-    );
+    const vec = this.gameState.joystickVector;
+    // Aplica la aceleración en función del vector del joystick
+    this.player.setAccelerationX(vec.x * acceleration);
+    this.player.setAccelerationY(vec.y * acceleration);
 
     this.opponentBehavior();
 
@@ -239,7 +220,7 @@ update() {
 
     const bullet = this.add.sprite(startX, startY, options.texture || "bullet");
     bullet.setScale(0.4);
-    
+
     this.tweens.add({
       targets: bullet,
       x: targetX,
@@ -249,15 +230,17 @@ update() {
       onComplete: () => {
         bullet.destroy();
         const currentDistance = Phaser.Math.Distance.Between(
-          targetX, targetY, 
-          target.x, target.y
+          targetX,
+          targetY,
+          target.x,
+          target.y
         );
         const HITBOX_RADIUS = 40;
-        
+
         if (currentDistance <= HITBOX_RADIUS) {
           this.applyDamage(target, options.damage);
         }
-      }
+      },
     });
   }
 
@@ -266,16 +249,26 @@ update() {
     if (target === this.opponent && this.gameState.opponentInvulnerable) return;
 
     if (target === this.player) {
-      this.gameState.playerHealth = Phaser.Math.Clamp(this.gameState.playerHealth - damage, 0, 100);
+      this.gameState.playerHealth = Phaser.Math.Clamp(
+        this.gameState.playerHealth - damage,
+        0,
+        100
+      );
     } else {
-      this.gameState.opponentHealth = Phaser.Math.Clamp(this.gameState.opponentHealth - damage, 0, 100);
+      this.gameState.opponentHealth = Phaser.Math.Clamp(
+        this.gameState.opponentHealth - damage,
+        0,
+        100
+      );
     }
     this.registry.events.emit("updateHealth", {
       player: this.gameState.playerHealth,
       opponent: this.gameState.opponentHealth,
     });
     target.setTint(0xff0000);
-    this.time.delayedCall(300, () => { target.clearTint(); });
+    this.time.delayedCall(300, () => {
+      target.clearTint();
+    });
   }
 
   handleAttack() {
@@ -284,7 +277,9 @@ update() {
     this.sound.play("attackSound");
     this.attackWithPowerUp("player", this.opponent, this.gameState.playerPowerUp.type);
     this.gameState.playerPowerUp = null;
-    this.time.delayedCall(1000, () => { this.gameState.attackCooldown = false; });
+    this.time.delayedCall(1000, () => {
+      this.gameState.attackCooldown = false;
+    });
   }
 
   opponentAttack() {
@@ -293,7 +288,9 @@ update() {
     this.sound.play("attackSound");
     this.attackWithPowerUp("opponent", this.player, this.gameState.opponentPowerUp.type);
     this.gameState.opponentPowerUp = null;
-    this.time.delayedCall(1000, () => { this.gameState.opponentAttackCooldown = false; });
+    this.time.delayedCall(1000, () => {
+      this.gameState.opponentAttackCooldown = false;
+    });
   }
 
   attackWithPowerUp(user, target, powerUpType) {
@@ -437,7 +434,7 @@ update() {
     if (!this.gameState.opponentPowerUp) {
       let closestPowerUp = null;
       let closestDistance = Infinity;
-      this.powerUps.getChildren().forEach(pu => {
+      this.powerUps.getChildren().forEach((pu) => {
         if (!pu.active) return;
         let d = Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, pu.x, pu.y);
         if (d < closestDistance) {
