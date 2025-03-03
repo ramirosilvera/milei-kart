@@ -19,7 +19,7 @@ export default class MenuScene extends Phaser.Scene {
         // Logo: se reduce la escala y se coloca con un margen superior para evitar que sobresalga
         if (this.textures.exists('logo')) {
             const logo = this.add.image(this.cameras.main.centerX, 50, 'logo')
-                .setScale(0.5)
+                .setScale(0.3)
                 .setAlpha(0);
             this.tweens.add({
                 targets: logo,
