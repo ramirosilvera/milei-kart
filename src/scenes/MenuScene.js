@@ -4,40 +4,41 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     create() {
-        // Fondo: se muestra la imagen o, en su defecto, un color sólido
-        if (this.textures.exists('menuBackground')) {
-            this.add.image(
+        // FONDO: Usar el logo como fondo a pantalla completa y atenuado para no opacar los textos
+        if (this.textures.exists('logo')) {
+            const bgLogo = this.add.image(
                 this.cameras.main.centerX,
                 this.cameras.main.centerY,
-                'menuBackground'
-            ).setDisplaySize(this.cameras.main.width, this.cameras.main.height);
-        } else {
-            this.cameras.main.setBackgroundColor(0x000000);
-            console.error("Falta el asset 'menuBackground'");
-        }
+                'logo'
+            ).setDisplaySize(this.cameras.main.width, this.cameras.main.height)
+             .setAlpha(0); // Iniciamos transparente para efecto de fade-in
 
-        // Logo: se reduce la escala y se coloca con un margen superior para evitar que sobresalga
-        if (this.textures.exists('logo')) {
-            const logo = this.add.image(this.cameras.main.centerX, 50, 'logo')
-                .setScale(0.3)
-                .setAlpha(0);
             this.tweens.add({
-                targets: logo,
-                alpha: 1,
+                targets: bgLogo,
+                alpha: 0.3,  // Atenuado para dar un toque moderno sin saturar la escena
                 duration: 1000,
                 ease: 'Power2'
             });
         } else {
+            this.cameras.main.setBackgroundColor(0x000000);
             console.error("Falta el asset 'logo'");
         }
 
-        // Título: sin borde en el fondo, con mayor tamaño y sombra
+        // (Opcional) Overlay sutil para mejorar la legibilidad de los textos
+        const overlay = this.add.rectangle(
+            this.cameras.main.centerX,
+            this.cameras.main.centerY,
+            this.cameras.main.width,
+            this.cameras.main.height,
+            0x000000,
+            0.2
+        );
+
+        // TÍTULO: Diseño moderno con tipografía limpia
         const titleText = this.add.text(0, 0, "Milei Kart: La Carrera de la Distracción", {
-            fontFamily: '"Arcade Classic", sans-serif',
+            fontFamily: 'Roboto, sans-serif',
             fontSize: '42px',
             fill: '#32CD32',
-            stroke: '#000',
-            strokeThickness: 4,
             align: 'center'
         }).setOrigin(0.5).setShadow(2, 2, "#000", 2, true, true);
         const titleBg = this.add.rectangle(
@@ -46,9 +47,10 @@ export default class MenuScene extends Phaser.Scene {
             titleText.width + 60,
             titleText.height + 30,
             0x000000,
-            0.7
+            0.6
         ).setOrigin(0.5);
-        const titleContainer = this.add.container(this.cameras.main.centerX, 110, [titleBg, titleText]);
+        // Ubicamos el título en Y = 150 para separarlo del resto
+        const titleContainer = this.add.container(this.cameras.main.centerX, 150, [titleBg, titleText]);
         titleContainer.alpha = 0;
         this.tweens.add({
             targets: titleContainer,
@@ -57,12 +59,12 @@ export default class MenuScene extends Phaser.Scene {
             ease: 'Power2'
         });
 
-        // Narrativa ampliada: se reposiciona para dar mayor espacio
-        const narrative = " En un mundo de crisis económica y escándalos cripto, Milei recurre a su arma favorita: la distracción mediática. Ataca al kirchnerismo con tweets incendiarios y promesas vacías, mientras su gobierno se hunde en el caos. ¡Recoge power-ups como Desinformación, Tweets Falsos y Escudo de Privilegios para desviar la atención y mantenerte en la carrera del poder! ¿Podrás sobrevivir a las trampas de la oposición y a tus propias falencias?";
+        // NARRATIVA: Más separación para evitar solapamientos
+        const narrative = "En un mundo de crisis económica y escándalos cripto, Milei recurre a su arma favorita: la distracción mediática. Ataca al kirchnerismo con tweets incendiarios y promesas vacías, mientras su gobierno se hunde en el caos. ¡Recoge power-ups como Desinformación, Tweets Falsos y Escudo de Privilegios para desviar la atención y mantenerte en la carrera del poder! ¿Podrás sobrevivir a las trampas de la oposición y a tus propias falencias?";
         const narrativeText = this.add.text(0, 0, narrative, {
-            fontFamily: 'Arial',
+            fontFamily: 'Roboto, sans-serif',
             fontSize: '28px',
-            fill: '#fff',
+            fill: '#FFFFFF',
             align: 'center',
             wordWrap: { width: this.cameras.main.width * 0.8 }
         }).setOrigin(0.5).setShadow(2, 2, "#000", 2, true, true);
@@ -72,9 +74,10 @@ export default class MenuScene extends Phaser.Scene {
             narrativeText.width + 40,
             narrativeText.height + 20,
             0x000000,
-            0.7
+            0.6
         ).setOrigin(0.5);
-        const narrativeContainer = this.add.container(this.cameras.main.centerX, 250, [narrativeBg, narrativeText]);
+        // Ubicamos la narrativa en Y = 350 para mayor separación
+        const narrativeContainer = this.add.container(this.cameras.main.centerX, 350, [narrativeBg, narrativeText]);
         narrativeContainer.alpha = 0;
         this.tweens.add({
             targets: narrativeContainer,
@@ -84,13 +87,11 @@ export default class MenuScene extends Phaser.Scene {
             ease: 'Power2'
         });
 
-        // Botón "JUGAR": sin borde en el fondo, con mayor tamaño de texto y efectos de interacción
+        // BOTÓN "JUGAR": Diseño limpio y moderno con efectos sutiles
         const buttonText = this.add.text(0, 0, "JUGAR", {
-            fontFamily: '"Arcade Classic", sans-serif',
+            fontFamily: 'Roboto, sans-serif',
             fontSize: '32px',
-            fill: '#fff',
-            stroke: '#000',
-            strokeThickness: 3,
+            fill: '#FFFFFF',
             align: 'center'
         }).setOrigin(0.5).setShadow(2, 2, "#000", 2, true, true);
         const buttonBg = this.add.rectangle(
@@ -102,6 +103,7 @@ export default class MenuScene extends Phaser.Scene {
             1
         ).setOrigin(0.5)
          .setInteractive({ useHandCursor: true });
+        // Ubicamos el botón en Y = 550
         const buttonContainer = this.add.container(this.cameras.main.centerX, 550, [buttonBg, buttonText]);
         buttonContainer.alpha = 0;
         this.tweens.add({
@@ -112,7 +114,7 @@ export default class MenuScene extends Phaser.Scene {
             ease: 'Power2'
         });
 
-        // Interactividad del botón "JUGAR" con animación y transición
+        // Interactividad del botón "JUGAR" con animación sutil
         buttonBg.on('pointerdown', () => {
             this.sound.play('menuSelect');
             this.tweens.add({
