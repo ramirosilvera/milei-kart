@@ -30,7 +30,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.scene.launch("UIScene");
 
-    // Configuramos superposición inmediata para recoger power ups
+    // Configuramos overlap para que la recolección sea inmediata
     this.physics.add.overlap(
       this.player,
       this.powerUps,
@@ -86,8 +86,8 @@ export default class GameScene extends Phaser.Scene {
       .setBounce(1, 0)
       .setCollideWorldBounds(true);
 
-    // Mejoramos la precisión de las colisiones usando cuerpos circulares
-    // Se utiliza un radio ligeramente menor al tamaño visual para un ajuste más preciso.
+    // Mejoramos la precisión de las colisiones usando cuerpos circulares.
+    // Se utiliza un radio ligeramente menor para ajustar mejor la forma real del kart.
     this.player.body.setCircle(this.player.displayWidth * 0.45);
     this.opponent.body.setCircle(this.opponent.displayWidth * 0.45);
 
@@ -103,7 +103,7 @@ export default class GameScene extends Phaser.Scene {
   setupJoystick() {
     const baseX = 100,
       baseY = this.cameras.main.height - 100;
-    const baseRadius = 80; // Aumentado para facilitar el manejo
+    const baseRadius = 80; // Base agrandada para facilitar el manejo
 
     // Base del joystick con estilo tipo Nintendo (borde blanco)
     this.joystickBase = this.add.circle(baseX, baseY, baseRadius, 0x444444, 0.8)
@@ -167,7 +167,7 @@ export default class GameScene extends Phaser.Scene {
     const normY = (knobY - baseY) / maxDistance;
     this.gameState.joystickVector.set(normX, normY);
   }
-  // --- Fin joystick ---
+  // --- Fin del joystick ---
 
   setupAttackButton() {
     const btnX = this.cameras.main.width - 100,
@@ -362,35 +362,34 @@ export default class GameScene extends Phaser.Scene {
     );
   }
 
-  // Métodos de superposición para recolección inmediata de power ups
+  // Overlap callbacks para recolección inmediata de power ups
   onPlayerPowerUpOverlap(player, powerUp) {
-    if (!this.gameState.playerPowerUp) {
+    if (!this.gameState.playerPowerUp && powerUp.active) {
       this.collectPowerUp(player, powerUp);
     }
   }
 
   onOpponentPowerUpOverlap(opponent, powerUp) {
-    if (!this.gameState.opponentPowerUp) {
+    if (!this.gameState.opponentPowerUp && powerUp.active) {
       this.collectPowerUpForOpponent(opponent, powerUp);
     }
   }
 
   collectPowerUp(sprite, powerUp) {
-    // Se asigna el power up inmediatamente y se muestra el mensaje
-    if (sprite === this.player && !this.gameState.playerPowerUp) {
+    if (sprite === this.player && !this.gameState.playerPowerUp && powerUp.active) {
       const type = powerUp.texture.key;
       this.gameState.playerPowerUp = { type };
       this.showPowerUpMessage(this.getPowerUpMessage(type), sprite.x, sprite.y - 50);
-      powerUp.destroy();
+      powerUp.disableBody(true, true);
     }
   }
 
   collectPowerUpForOpponent(sprite, powerUp) {
-    if (sprite === this.opponent && !this.gameState.opponentPowerUp) {
+    if (sprite === this.opponent && !this.gameState.opponentPowerUp && powerUp.active) {
       const type = powerUp.texture.key;
       this.gameState.opponentPowerUp = { type };
       this.showPowerUpMessage(this.getPowerUpMessage(type), sprite.x, sprite.y - 50);
-      powerUp.destroy();
+      powerUp.disableBody(true, true);
     }
   }
 
@@ -450,12 +449,11 @@ export default class GameScene extends Phaser.Scene {
     // Comportamiento del oponente:
     // - Si el jugador tiene un power up, el oponente huye.
     // - Si el oponente tiene un power up, persigue al jugador.
-    // - Si ninguno tiene power up, primero persigue el más cercano o patrulla.
+    // - Si ninguno tiene power up, primero persigue el más cercano o entra en modo patrulla.
     if (this.gameState.playerPowerUp) {
       const dx = this.opponent.x - this.player.x;
       const dy = this.opponent.y - this.player.y;
       const angle = Math.atan2(dy, dx);
-      // Velocidad de escape moderada
       this.physics.velocityFromRotation(angle, 120, this.opponent.body.velocity);
     } else if (this.gameState.opponentPowerUp) {
       this.physics.moveToObject(this.opponent, this.player, 150);
@@ -464,7 +462,6 @@ export default class GameScene extends Phaser.Scene {
         this.opponentAttack();
       }
     } else {
-      // Si existen power ups activos, persigue el más cercano a velocidad baja
       let activePowerUps = this.powerUps.getChildren().filter(pu => pu.active);
       if (activePowerUps.length > 0) {
         let closestPowerUp = null;
@@ -480,7 +477,6 @@ export default class GameScene extends Phaser.Scene {
           this.physics.moveToObject(this.opponent, closestPowerUp, 80);
         }
       } else {
-        // Modo patrulla: destino aleatorio
         if (!this.opponentPatrolTarget ||
             Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, this.opponentPatrolTarget.x, this.opponentPatrolTarget.y) < 10) {
           const margin = 50;
