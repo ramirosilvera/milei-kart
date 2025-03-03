@@ -61,7 +61,7 @@ export default class MenuScene extends Phaser.Scene {
         const narrative = " En un mundo de crisis económica y escándalos cripto, Milei recurre a su arma favorita: la distracción mediática. Ataca al kirchnerismo con tweets incendiarios y promesas vacías, mientras su gobierno se hunde en el caos. ¡Recoge power-ups como Desinformación, Tweets Falsos y Escudo de Privilegios para desviar la atención y mantenerte en la carrera del poder! ¿Podrás sobrevivir a las trampas de la oposición y a tus propias falencias?";
         const narrativeText = this.add.text(0, 0, narrative, {
             fontFamily: 'Arial',
-            fontSize: '24px',
+            fontSize: '28px',
             fill: '#fff',
             align: 'center',
             wordWrap: { width: this.cameras.main.width * 0.8 }
@@ -70,7 +70,7 @@ export default class MenuScene extends Phaser.Scene {
             0,
             0,
             narrativeText.width + 40,
-            narrativeText.height + 20,
+            narrativeText.height + 30,
             0x000000,
             0.7
         ).setOrigin(0.5);
@@ -81,33 +81,6 @@ export default class MenuScene extends Phaser.Scene {
             alpha: 1,
             duration: 1500,
             delay: 500,
-            ease: 'Power2'
-        });
-
-        // Mini Tutorial: instrucciones del juego, sin borde en el fondo
-        const tutorial = "Mini Tutorial:\n\n- Recoge powerups: Desinformación, Tweets, Hostigamiento y Escudo de Privilegios.\n- Úsalos para atacar al enemigo y defenderte.\n- Gana la carrera reduciendo la barra de salud del oponente a cero.";
-        const tutorialText = this.add.text(0, 0, tutorial, {
-            fontFamily: 'Arial',
-            fontSize: '24px',
-            fill: '#FFD700',
-            align: 'left',
-            wordWrap: { width: this.cameras.main.width * 0.8 }
-        }).setOrigin(0.5).setShadow(2, 2, "#000", 2, true, true);
-        const tutorialBg = this.add.rectangle(
-            0,
-            0,
-            tutorialText.width + 40,
-            tutorialText.height + 20,
-            0x000000,
-            0.7
-        ).setOrigin(0.5);
-        const tutorialContainer = this.add.container(this.cameras.main.centerX, 400, [tutorialBg, tutorialText]);
-        tutorialContainer.alpha = 0;
-        this.tweens.add({
-            targets: tutorialContainer,
-            alpha: 1,
-            duration: 1500,
-            delay: 1000,
             ease: 'Power2'
         });
 
