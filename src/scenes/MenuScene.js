@@ -42,7 +42,7 @@ export default class MenuScene extends Phaser.Scene {
         }).setOrigin(0.5).setShadow(3, 3, "#000", 3, true, true);
 
         // Texto de narrativa
-        const narrative = "En un mundo de crisis económica y escándalos cripto, Milei recurre a su arma favorita: la distracción mediática. Ataca al kirchnerismo con tweets incendiarios y promesas vacías, mientras su gobierno se hunde en el caos. ¡Recoge power-ups como "Desinformación", "Tweets Falsos" y "Escudo de Privilegios" para desviar la atención y mantenerte en la carrera del poder! ¿Podrás sobrevivir a las trampas de la oposición y a tus propias falencias?";
+        const narrative = "En un mundo de crisis económica y escándalos cripto, Milei recurre a su arma favorita: la distracción mediática. Ataca al kirchnerismo con tweets incendiarios y promesas vacías, mientras su gobierno se hunde en el caos. ¡Recoge power-ups como Desinformación, Tweets Falsos y Escudo de Privilegios para desviar la atención y mantenerte en la carrera del poder! ¿Podrás sobrevivir a las trampas de la oposición y a tus propias falencias?";
         const narrativeText = this.add.text(this.cameras.main.centerX, 250, narrative, {
             fontFamily: 'Arial',
             fontSize: '20px',
