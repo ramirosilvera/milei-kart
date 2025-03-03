@@ -7,7 +7,6 @@ export default class GameScene extends Phaser.Scene {
         this.setupScene();
         this.setupPhysics();
         this.createGameObjects();
-        this.setupEventListeners();
         this.setupControls();
         this.setupTimers();
 
@@ -15,11 +14,12 @@ export default class GameScene extends Phaser.Scene {
         this.gameState.playerPowerUp = null;
         this.gameState.opponentPowerUp = null;
         this.gameState.opponentAttackCooldown = false;
+
+        // Lanzamos la UIScene para la interfaz
+        this.scene.launch("UIScene");
     }
 
-    // ─────────────────────────────
-    // Configuración Básica
-    // ─────────────────────────────
+    // Configuración básica del escenario y estado
     setupScene() {
         // Fondo y música
         this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'track')
@@ -43,6 +43,7 @@ export default class GameScene extends Phaser.Scene {
         this.gameOver = false;
     }
 
+    // Configuración de físicas (sin colisiones automáticas)
     setupPhysics() {
         // Crear jugador
         this.player = this.physics.add.sprite(
@@ -66,48 +67,15 @@ export default class GameScene extends Phaser.Scene {
         .setCollideWorldBounds(true)
         .setVelocityX(100);
 
-        // Grupos para balas y power‑ups
+        // Grupos para balas y power‑ups (sin añadir colisiones físicas)
         this.playerBullets = this.physics.add.group();
         this.opponentBullets = this.physics.add.group();
         this.powerUps = this.physics.add.group();
     }
 
+    // No se crea UI en esta escena para evitar cargas extras
     createGameObjects() {
-        // Aquí no se lanza ninguna escena de UI para simplificar la carga.
-    }
-
-    setupEventListeners() {
-        // Colisiones entre balas y personajes
-        this.physics.add.overlap(
-            this.playerBullets,
-            this.opponent,
-            (bullet, target) => this.handleHit(bullet, target, 'opponent'),
-            null,
-            this
-        );
-        this.physics.add.overlap(
-            this.opponentBullets,
-            this.player,
-            (bullet, target) => this.handleHit(bullet, target, 'player'),
-            null,
-            this
-        );
-
-        // Colisiones de power‑ups para ambos personajes
-        this.physics.add.overlap(
-            this.player,
-            this.powerUps,
-            (player, powerUp) => this.collectPowerUp(player, powerUp),
-            null,
-            this
-        );
-        this.physics.add.overlap(
-            this.opponent,
-            this.powerUps,
-            (opponent, powerUp) => this.collectPowerUpForOpponent(opponent, powerUp),
-            null,
-            this
-        );
+        // Puede incluir elementos extra si se requiere
     }
 
     // ─────────────────────────────
@@ -119,7 +87,6 @@ export default class GameScene extends Phaser.Scene {
     }
 
     setupJoystick() {
-        // Ubicación base para el joystick (esquina inferior izquierda)
         const baseX = 100, baseY = this.cameras.main.height - 100;
         const radius = 50; // Botones circulares grandes
 
@@ -136,7 +103,7 @@ export default class GameScene extends Phaser.Scene {
         this.rightButton = this.add.circle(baseX + 70, baseY, radius, 0x333333, 0.8).setInteractive();
         this.add.text(baseX + 70, baseY, '→', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
 
-        // Eventos para cada botón
+        // Eventos de entrada
         this.upButton.on('pointerdown', () => { this.gameState.moveUp = true; });
         this.upButton.on('pointerup', () => { this.gameState.moveUp = false; });
         this.upButton.on('pointerout', () => { this.gameState.moveUp = false; });
@@ -155,7 +122,6 @@ export default class GameScene extends Phaser.Scene {
     }
 
     setupAttackButton() {
-        // Botón de ataque en la esquina inferior derecha (circular grande)
         const btnX = this.cameras.main.width - 100;
         const btnY = this.cameras.main.height - 100;
         const radius = 60;
@@ -180,6 +146,9 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
+    // ─────────────────────────────
+    // Temporizadores
+    // ─────────────────────────────
     setupTimers() {
         // Spawn periódico de power‑ups
         this.time.addEvent({
@@ -191,12 +160,12 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // ─────────────────────────────
-    // Ciclo principal
+    // Ciclo principal y actualización
     // ─────────────────────────────
     update() {
         if (this.gameOver) return;
 
-        // Movimiento del jugador según controles
+        // Actualizar movimiento del jugador según controles
         const acceleration = 600;
         this.player.setAccelerationX(
             this.gameState.moveLeft ? -acceleration :
@@ -207,23 +176,71 @@ export default class GameScene extends Phaser.Scene {
             this.gameState.moveDown ? acceleration : 0
         );
 
-        // Comportamiento del oponente
+        // Actualizar comportamiento del oponente
         this.opponentBehavior();
 
-        // Condiciones de fin del juego
+        // Comprobación manual de impactos: balas y power‑ups
+        this.checkBulletCollisions();
+        this.checkPowerUpCollections();
+
+        // Comprobación de fin del juego
         if (this.gameState.playerHealth <= 0) this.endGame('opponent');
         if (this.gameState.opponentHealth <= 0) this.endGame('player');
     }
 
     // ─────────────────────────────
-    // Inteligencia Básica del Oponente
+    // Comprobación manual de colisiones (por distancia)
+    // ─────────────────────────────
+    checkBulletCollisions() {
+        const hitThreshold = 30; // Distancia para considerar un impacto
+
+        // Balas del jugador contra el oponente
+        this.playerBullets.getChildren().forEach(bullet => {
+            if (!bullet.active) return;
+            let d = Phaser.Math.Distance.Between(bullet.x, bullet.y, this.opponent.x, this.opponent.y);
+            if (d < hitThreshold) {
+                this.handleHit(bullet, this.opponent, 'opponent');
+            }
+        });
+        // Balas del oponente contra el jugador
+        this.opponentBullets.getChildren().forEach(bullet => {
+            if (!bullet.active) return;
+            let d = Phaser.Math.Distance.Between(bullet.x, bullet.y, this.player.x, this.player.y);
+            if (d < hitThreshold) {
+                this.handleHit(bullet, this.player, 'player');
+            }
+        });
+    }
+
+    checkPowerUpCollections() {
+        const collectThreshold = 40; // Distancia para recoger un power‑up
+
+        this.powerUps.getChildren().forEach(powerUp => {
+            if (!powerUp.active) return;
+            // Para el jugador
+            let dPlayer = Phaser.Math.Distance.Between(powerUp.x, powerUp.y, this.player.x, this.player.y);
+            if (dPlayer < collectThreshold && !this.gameState.playerPowerUp) {
+                this.collectPowerUp(this.player, powerUp);
+            }
+            // Para el oponente
+            let dOpponent = Phaser.Math.Distance.Between(powerUp.x, powerUp.y, this.opponent.x, this.opponent.y);
+            if (dOpponent < collectThreshold && !this.gameState.opponentPowerUp) {
+                this.collectPowerUpForOpponent(this.opponent, powerUp);
+            }
+        });
+    }
+
+    // ─────────────────────────────
+    // Inteligencia básica del oponente
     // ─────────────────────────────
     opponentBehavior() {
         if (!this.gameState.opponentPowerUp) {
+            // Si no tiene power‑up, busca el más cercano
             let closestPowerUp = null;
             let closestDistance = Infinity;
             this.powerUps.getChildren().forEach(pu => {
-                const d = Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, pu.x, pu.y);
+                if (!pu.active) return;
+                let d = Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, pu.x, pu.y);
                 if (d < closestDistance) {
                     closestDistance = d;
                     closestPowerUp = pu;
@@ -232,19 +249,21 @@ export default class GameScene extends Phaser.Scene {
             if (closestPowerUp) {
                 this.physics.moveToObject(this.opponent, closestPowerUp, 150);
             } else {
+                // Sin power‑up disponible: sigue al jugador
                 this.physics.moveToObject(this.opponent, this.player, 100);
             }
         } else {
+            // Con power‑up, se acerca al jugador y ataca si está en rango
             this.physics.moveToObject(this.opponent, this.player, 200);
-            const distanceToPlayer = Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, this.player.x, this.player.y);
-            if (distanceToPlayer < 300) {
+            let d = Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, this.player.x, this.player.y);
+            if (d < 300) {
                 this.opponentAttack();
             }
         }
     }
 
     // ─────────────────────────────
-    // Funciones de Ataque y Balas
+    // Funciones de ataque y balas
     // ─────────────────────────────
     handleAttack() {
         if (this.gameState.attackCooldown || !this.gameState.playerPowerUp) return;
@@ -265,7 +284,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     attackWithPowerUp(user, target, powerUpType) {
-        // Cada bala usa como textura la imagen del power‑up recogido
+        // Cada bala usará como textura la imagen del power‑up recogido
         switch (powerUpType) {
             case 'powerUpDesinformation':
                 this.createBullet(user, target, { damage: 35, speed: 500, texture: powerUpType });
@@ -305,7 +324,7 @@ export default class GameScene extends Phaser.Scene {
         }
         this.physics.velocityFromRotation(angle, options.speed, bullet.body.velocity);
 
-        // Tween para dar efecto de pulso
+        // Efecto visual de pulso
         this.tweens.add({
             targets: bullet,
             scale: 0.5,
@@ -313,7 +332,7 @@ export default class GameScene extends Phaser.Scene {
             duration: 300,
             repeat: -1
         });
-        // Aseguramos destruir la bala después de 3 segundos si no impacta
+        // Destruir bala después de 3 segundos si no impacta
         this.time.delayedCall(3000, () => { if (bullet.active) bullet.destroy(); });
         return bullet;
     }
@@ -352,18 +371,15 @@ export default class GameScene extends Phaser.Scene {
         if (bullet.getData('processed')) return;
         bullet.setData('processed', true);
 
-        // Determinamos a quién se le resta salud
         const isPlayer = targetType === 'player';
         const healthProp = isPlayer ? 'playerHealth' : 'opponentHealth';
         const invulnerableProp = isPlayer ? 'playerInvulnerable' : 'opponentInvulnerable';
 
-        // Si el objetivo es invulnerable, destruimos la bala y salimos
         if (this.gameState[invulnerableProp]) {
             bullet.destroy();
             return;
         }
 
-        // Se actualiza la salud
         this.gameState[healthProp] = Phaser.Math.Clamp(
             this.gameState[healthProp] - bullet.getData('damage'),
             0,
@@ -374,7 +390,6 @@ export default class GameScene extends Phaser.Scene {
         this.addHitParticles(target.x, target.y);
         this.time.delayedCall(300, () => target.clearTint());
 
-        // Si la bala tiene una función de callback (por ejemplo, para ralentizar), se ejecuta
         if (bullet.getData('hitCallback')) {
             bullet.getData('hitCallback')(target);
         }
@@ -396,7 +411,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // ─────────────────────────────
-    // Power‑up: Recoger y Spawn
+    // Power‑up: Spawn y recolección
     // ─────────────────────────────
     spawnPowerUp() {
         const types = ['powerUpDesinformation', 'powerUpRetuits', 'powerUpShield', 'powerUpHostigamiento'];
@@ -424,7 +439,6 @@ export default class GameScene extends Phaser.Scene {
     }
 
     collectPowerUp(sprite, powerUp) {
-        // El jugador recoge el power‑up si aún no tiene uno
         if (sprite === this.player && !this.gameState.playerPowerUp) {
             const type = powerUp.texture.key;
             this.gameState.playerPowerUp = { type };
@@ -433,7 +447,6 @@ export default class GameScene extends Phaser.Scene {
     }
 
     collectPowerUpForOpponent(sprite, powerUp) {
-        // El oponente recoge el power‑up si aún no tiene uno
         if (sprite === this.opponent && !this.gameState.opponentPowerUp) {
             const type = powerUp.texture.key;
             this.gameState.opponentPowerUp = { type };
@@ -442,7 +455,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // ─────────────────────────────
-    // Fin del Juego
+    // Fin del juego
     // ─────────────────────────────
     endGame(winner) {
         if (this.gameOver) return;
