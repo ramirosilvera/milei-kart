@@ -86,85 +86,87 @@ export default class GameScene extends Phaser.Scene {
     this.setupAttackButton();
   }
 
+// Reemplaza la función setupJoystick actual por la siguiente versión:
 setupJoystick() {
-    const baseX = 100, baseY = this.cameras.main.height - 100;
-    const radius = 50;
-    
-    // Botones direccionales
-    this.upButton = this.add.circle(baseX, baseY - 70, radius, 0x333333, 0.8).setInteractive();
-    this.add.text(baseX, baseY - 70, "↑", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
-    
-    this.leftButton = this.add.circle(baseX - 70, baseY, radius, 0x333333, 0.8).setInteractive();
-    this.add.text(baseX - 70, baseY, "←", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
-    
-    this.downButton = this.add.circle(baseX, baseY + 70, radius, 0x333333, 0.8).setInteractive();
-    this.add.text(baseX, baseY + 70, "↓", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
-    
-    this.rightButton = this.add.circle(baseX + 70, baseY, radius, 0x333333, 0.8).setInteractive();
-    this.add.text(baseX + 70, baseY, "→", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
+  const baseX = 100, baseY = this.cameras.main.height - 100;
+  const baseRadius = 60; // Radio de la base del joystick
 
-    // Botones diagonales
-    this.upLeftButton = this.add.circle(baseX - 50, baseY - 50, radius, 0x555555, 0.8).setInteractive();
-    this.add.text(baseX - 50, baseY - 50, "↖", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
+  // Crea la base del joystick
+  this.joystickBase = this.add.circle(baseX, baseY, baseRadius, 0x888888, 0.6)
+    .setInteractive()
+    .setScrollFactor(0)
+    .setDepth(1);
 
-    this.upRightButton = this.add.circle(baseX + 50, baseY - 50, radius, 0x555555, 0.8).setInteractive();
-    this.add.text(baseX + 50, baseY - 50, "↗", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
+  // Crea la palanca (knob) del joystick, un poco más pequeña
+  const knobRadius = 30;
+  this.joystickKnob = this.add.circle(baseX, baseY, knobRadius, 0xcccccc, 0.8)
+    .setScrollFactor(0)
+    .setDepth(2);
 
-    this.downLeftButton = this.add.circle(baseX - 50, baseY + 50, radius, 0x555555, 0.8).setInteractive();
-    this.add.text(baseX - 50, baseY + 50, "↙", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
+  // Estado del joystick: vector de dirección y bandera para saber si está activo
+  this.gameState.joystickVector = new Phaser.Math.Vector2(0, 0);
+  this.joystickActive = false;
 
-    this.downRightButton = this.add.circle(baseX + 50, baseY + 50, radius, 0x555555, 0.8).setInteractive();
-    this.add.text(baseX + 50, baseY + 50, "↘", { fontSize: "32px", fill: "#fff" }).setOrigin(0.5);
+  // Eventos de entrada para el joystick
+  this.input.on('pointerdown', (pointer) => {
+    // Si el toque inicia dentro del área de la base del joystick, activarlo
+    const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, baseX, baseY);
+    if (dist <= baseRadius) {
+      this.joystickActive = true;
+      this.updateJoystick(pointer);
+    }
+  });
 
-    // Eventos de interacción
-    this.upButton.on("pointerdown", () => { this.gameState.moveUp = true; });
-    this.upButton.on("pointerup", () => { this.gameState.moveUp = false; });
+  this.input.on('pointermove', (pointer) => {
+    if (this.joystickActive) {
+      this.updateJoystick(pointer);
+    }
+  });
 
-    this.downButton.on("pointerdown", () => { this.gameState.moveDown = true; });
-    this.downButton.on("pointerup", () => { this.gameState.moveDown = false; });
+  this.input.on('pointerup', () => {
+    // Al soltar, se reinicia el joystick
+    this.joystickActive = false;
+    this.gameState.joystickVector.set(0, 0);
+    this.joystickKnob.setPosition(baseX, baseY);
+  });
+},
 
-    this.leftButton.on("pointerdown", () => { this.gameState.moveLeft = true; });
-    this.leftButton.on("pointerup", () => { this.gameState.moveLeft = false; });
+// Función auxiliar para actualizar la posición de la palanca del joystick
+updateJoystick(pointer) {
+  const baseX = this.joystickBase.x;
+  const baseY = this.joystickBase.y;
+  const maxDistance = 60; // Radio máximo permitido (igual que baseRadius)
 
-    this.rightButton.on("pointerdown", () => { this.gameState.moveRight = true; });
-    this.rightButton.on("pointerup", () => { this.gameState.moveRight = false; });
+  const dx = pointer.x - baseX;
+  const dy = pointer.y - baseY;
+  const distance = Phaser.Math.Distance.Between(pointer.x, pointer.y, baseX, baseY);
+  // Limita la distancia máxima para que el knob no se salga de la base
+  const clampedDistance = Math.min(distance, maxDistance);
+  const angle = Math.atan2(dy, dx);
+  const knobX = baseX + clampedDistance * Math.cos(angle);
+  const knobY = baseY + clampedDistance * Math.sin(angle);
+  this.joystickKnob.setPosition(knobX, knobY);
 
-    // Eventos diagonales
-    this.upLeftButton.on("pointerdown", () => {
-        this.gameState.moveUp = true;
-        this.gameState.moveLeft = true;
-    });
-    this.upLeftButton.on("pointerup", () => {
-        this.gameState.moveUp = false;
-        this.gameState.moveLeft = false;
-    });
+  // Normaliza el vector resultante para que sus componentes estén entre -1 y 1
+  const normX = (knobX - baseX) / maxDistance;
+  const normY = (knobY - baseY) / maxDistance;
+  this.gameState.joystickVector.set(normX, normY);
+},
 
-    this.upRightButton.on("pointerdown", () => {
-        this.gameState.moveUp = true;
-        this.gameState.moveRight = true;
-    });
-    this.upRightButton.on("pointerup", () => {
-        this.gameState.moveUp = false;
-        this.gameState.moveRight = false;
-    });
+// Modifica el update() para utilizar el vector del joystick en lugar de las banderas individuales:
+update() {
+  if (this.gameOver) return;
 
-    this.downLeftButton.on("pointerdown", () => {
-        this.gameState.moveDown = true;
-        this.gameState.moveLeft = true;
-    });
-    this.downLeftButton.on("pointerup", () => {
-        this.gameState.moveDown = false;
-        this.gameState.moveLeft = false;
-    });
+  const acceleration = 600;
+  const vec = this.gameState.joystickVector;
+  // Aplica la aceleración según el vector del joystick
+  this.player.setAccelerationX(vec.x * acceleration);
+  this.player.setAccelerationY(vec.y * acceleration);
 
-    this.downRightButton.on("pointerdown", () => {
-        this.gameState.moveDown = true;
-        this.gameState.moveRight = true;
-    });
-    this.downRightButton.on("pointerup", () => {
-        this.gameState.moveDown = false;
-        this.gameState.moveRight = false;
-    });
+  // Comportamiento del oponente y chequeo de condiciones de fin de juego
+  this.opponentBehavior();
+  if (this.gameState.playerHealth <= 0) this.endGame("opponent");
+  if (this.gameState.opponentHealth <= 0) this.endGame("player");
 }
 
   setupAttackButton() {
