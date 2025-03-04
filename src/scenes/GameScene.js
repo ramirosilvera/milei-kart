@@ -30,7 +30,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.scene.launch("UIScene");
 
-    // Configuramos overlap para que la recolección sea inmediata
+    // Configuramos overlap para recolección inmediata, pero con doble verificación
     this.physics.add.overlap(
       this.player,
       this.powerUps,
@@ -86,8 +86,8 @@ export default class GameScene extends Phaser.Scene {
       .setBounce(1, 0)
       .setCollideWorldBounds(true);
 
-    // Mejoramos la precisión de las colisiones usando cuerpos circulares.
-    // Se utiliza un radio ligeramente menor para ajustar mejor la forma real del kart.
+    // Ajustamos la forma de colisión con cuerpos circulares, usando un radio algo menor
+    // para acercarse a la forma real del kart.
     this.player.body.setCircle(this.player.displayWidth * 0.45);
     this.opponent.body.setCircle(this.opponent.displayWidth * 0.45);
 
@@ -362,16 +362,30 @@ export default class GameScene extends Phaser.Scene {
     );
   }
 
-  // Overlap callbacks para recolección inmediata de power ups
+  // Overlap callbacks con doble verificación:
   onPlayerPowerUpOverlap(player, powerUp) {
     if (!this.gameState.playerPowerUp && powerUp.active) {
-      this.collectPowerUp(player, powerUp);
+      // Primera verificación: si la distancia es menor a 3 veces el radio de colisión del jugador
+      const playerRadius = this.player.displayWidth * 0.45;
+      const distance = Phaser.Math.Distance.Between(player.x, player.y, powerUp.x, powerUp.y);
+      if (distance <= playerRadius * 3) {
+        // Segunda verificación: si la distancia es menor o igual al radio exacto
+        if (distance <= playerRadius) {
+          this.collectPowerUp(player, powerUp);
+        }
+      }
     }
   }
 
   onOpponentPowerUpOverlap(opponent, powerUp) {
     if (!this.gameState.opponentPowerUp && powerUp.active) {
-      this.collectPowerUpForOpponent(opponent, powerUp);
+      const opponentRadius = this.opponent.displayWidth * 0.45;
+      const distance = Phaser.Math.Distance.Between(opponent.x, opponent.y, powerUp.x, powerUp.y);
+      if (distance <= opponentRadius * 3) {
+        if (distance <= opponentRadius) {
+          this.collectPowerUpForOpponent(opponent, powerUp);
+        }
+      }
     }
   }
 
