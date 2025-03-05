@@ -1,6 +1,7 @@
 import BootScene from './scenes/BootScene.js';
 import PreloadScene from './scenes/PreloadScene.js';
 import MenuScene from './scenes/MenuScene.js';
+import CircuitScene from './scenes/CircuitScene.js';
 import GameScene from './scenes/GameScene.js';
 import UIScene from './scenes/UIScene.js';
 import EndScene from './scenes/EndScene.js';
