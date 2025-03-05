@@ -4,15 +4,16 @@ export default class CircuitScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("trackBackground", "assets/images/track_background.png");
+        // Se carga el fondo de la ruta (asegúrate de que la ruta del asset no se modifique)
+        this.load.image("trackBackground", "assets/images/track_backgrund.png");
         // Se asume que el asset "flares" ya está cargado en otra parte o disponible
     }
 
     create() {
         const worldWidth = 2000;
-        const worldHeight = 2000;
+        const worldHeight = 9000; // Mundo extendido para una carrera de 30 segundos a full speed
 
-        // Fondo del circuito (pista recta)
+        // Fondo del circuito (ruta clara)
         this.add.image(0, 0, "trackBackground")
             .setOrigin(0, 0)
             .setDisplaySize(worldWidth, worldHeight);
@@ -24,35 +25,35 @@ export default class CircuitScene extends Phaser.Scene {
         // Línea de meta en la parte superior de la pista
         this.createFinishLine();
 
-        // Señalización direccional (adaptada para pista recta)
+        // Señalización direccional y de avance
         this.createDirectionSigns();
 
-        // Crear marcadores de carril (lane markers)
+        // Marcadores de carril (lane markers) para dar sensación de movimiento y guía visual
         this.createLaneMarkers();
 
-        // Checkpoints para feedback durante la carrera
+        // Checkpoints distribuidos a lo largo de la carrera
         this.createCheckpoints();
     }
 
     createFinishLine() {
-        // Posicionar la meta en la parte superior central de la pista
+        // La meta se posiciona en la parte superior central (y = 50)
         const finishLineX = 950;
-        const finishLineY = 50;  // Antes 1800, ahora en la parte superior
+        const finishLineY = 50;
         const finishLineWidth = 100;
         const finishLineHeight = 10;
 
-        // Zona de detección
+        // Zona de detección de meta
         this.finishLine = this.add.zone(finishLineX, finishLineY, finishLineWidth, finishLineHeight)
             .setOrigin(0)
             .setRectangleDropZone(finishLineWidth, finishLineHeight);
 
-        // Guardar la zona de meta en el registry para que GameScene pueda acceder a ella
+        // Se guarda en el registry para que GameScene pueda acceder a ella
         this.registry.set("finishLine", this.finishLine);
 
         // Gráficos de la línea de meta
         const flagPole = this.add.line(
             finishLineX + finishLineWidth / 2 - 15,
-            finishLineY + 50, // Ajustado para que se vea debajo de la línea
+            finishLineY + 50, // Se dibuja hacia abajo para mayor visibilidad
             0, 0, 0, -50,
             0xffffff
         ).setLineWidth(4);
@@ -77,7 +78,7 @@ export default class CircuitScene extends Phaser.Scene {
             }
         ).setOrigin(0.5);
 
-        // Efecto de partículas
+        // Efecto de partículas (opcional)
         this.finishParticles = this.add.particles("flares")
             .createEmitter({
                 frame: "white",
@@ -93,10 +94,10 @@ export default class CircuitScene extends Phaser.Scene {
     }
 
     createDirectionSigns() {
-        // Para una pista recta, señalizamos "PISTA RECTA" y "¡CUIDADO OBSTÁCULOS!"
+        // Señales que indican avance y progreso (por ejemplo: "¡Vas bien!" y "¡Acelera!")
         const signs = [
-            { x: 1000, y: 1000, text: "PISTA\nRECTA", angle: 0, color: 0x00BFFF },
-            { x: 1100, y: 600, text: "¡CUIDADO\nOBSTÁCULOS!", angle: 0, color: 0xFF4500 }
+            { x: 1000, y: 8000, text: "¡Vas bien!", angle: 0, color: 0x00BFFF },
+            { x: 1100, y: 4000, text: "¡Acelera!", angle: 0, color: 0x32CD32 }
         ];
 
         signs.forEach(signData => {
@@ -130,7 +131,7 @@ export default class CircuitScene extends Phaser.Scene {
             sign.add([post, body, text, arrow]);
             sign.setDepth(1);
 
-            // Animación de flotación
+            // Animación de flotación para mayor dinamismo
             this.tweens.add({
                 targets: sign,
                 y: signData.y - 5,
@@ -144,7 +145,7 @@ export default class CircuitScene extends Phaser.Scene {
 
     createLaneMarkers() {
         const worldWidth = 2000;
-        const worldHeight = 2000;
+        const worldHeight = 9000;
         const centerX = worldWidth / 2;
         const markerLength = 30;
         const gap = 20;
@@ -158,10 +159,11 @@ export default class CircuitScene extends Phaser.Scene {
     }
 
     createCheckpoints() {
+        // Distribuidos en puntos estratégicos del recorrido
         const checkpoints = [
-            { x: 1000, y: 1500 },
-            { x: 1000, y: 1000 },
-            { x: 1000, y: 500 }
+            { x: 1000, y: 7000 },
+            { x: 1000, y: 5000 },
+            { x: 1000, y: 3000 }
         ];
 
         checkpoints.forEach((cp, index) => {
@@ -190,7 +192,7 @@ export default class CircuitScene extends Phaser.Scene {
 
             checkpoint.add([pole, flag, number]);
             
-            // Zona de detección
+            // Zona de detección (para feedback visual si se pasa)
             const zone = this.add.zone(cp.x, cp.y, 60, 60)
                 .setRectangleDropZone(60, 60)
                 .setData("activated", false);
