@@ -5,15 +5,15 @@ export default class GameScene extends Phaser.Scene {
 
   preload() {
     // Cargamos assets del juego
-    this.load.image("mileiKart", "assets/mileiKart.png");
-    this.load.image("opponentKart", "assets/opponentKart.png");
-    this.load.image("bullet", "assets/bullet.png");
-    this.load.image("powerUpDesinformation", "assets/powerUpDesinformation.png");
-    this.load.image("powerUpRetuits", "assets/powerUpRetuits.png");
-    this.load.image("powerUpShield", "assets/powerUpShield.png");
-    this.load.image("powerUpHostigamiento", "assets/powerUpHostigamiento.png");
-    this.load.audio("bgMusic", "assets/bgMusic.mp3");
-    this.load.audio("attackSound", "assets/attackSound.mp3");
+    this.load.image("mileiKart", "assets/images/mileiKart.png");
+    this.load.image("opponentKart", "assets/images/opponentKart.png");
+    this.load.image("bullet", "assets/images/bullet.png");
+    this.load.image("powerUpDesinformation", "assets/images/powerUpDesinformation.png");
+    this.load.image("powerUpRetuits", "assets/images/powerUpRetuits.png");
+    this.load.image("powerUpShield", "assets/images/powerUpShield.png");
+    this.load.image("powerUpHostigamiento", "assets/images/powerUpHostigamiento.png");
+    this.load.audio("bgMusic", "assets/sounds/bgMusic.mp3");
+    this.load.audio("attackSound", "assets/sounds/attackSound.mp3");
   }
 
   create() {
