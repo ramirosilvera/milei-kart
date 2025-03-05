@@ -114,7 +114,7 @@ export default class MenuScene extends Phaser.Scene {
             ease: 'Power2'
         });
 
-        // Interactividad del botón "JUGAR" con animación sutil
+        // Interactividad del botón "JUGAR" con animación sutil y corrección para iniciar ambas escenas
         buttonBg.on('pointerdown', () => {
             this.sound.play('menuSelect');
             this.tweens.add({
@@ -124,6 +124,8 @@ export default class MenuScene extends Phaser.Scene {
                 yoyo: true,
                 ease: 'Power2',
                 onComplete: () => {
+                    // Lanzamos la escena del circuito en segundo plano y luego iniciamos el juego
+                    this.scene.launch('CircuitScene');
                     this.scene.start('GameScene');
                 }
             });
