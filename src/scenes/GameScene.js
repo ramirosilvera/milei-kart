@@ -34,7 +34,7 @@ export default class GameScene extends Phaser.Scene {
       opponentInvulnerable: false,
       boostActive: false,  // Para gestionar el efecto boost
       lapCount: 0,
-      requiredLaps: 1  // Ahora se juega una única "vuelta" hasta la meta
+      requiredLaps: 1  // Se juega una única "vuelta" hasta la meta
     };
     this.gameOver = false;
     this.crossedFinishLine = false;
@@ -42,7 +42,7 @@ export default class GameScene extends Phaser.Scene {
     // Cronómetro de carrera
     this.raceStartTime = this.time.now;
 
-    // Texto de vueltas (opcional, aunque el objetivo es llegar a la meta)
+    // Texto de vueltas (opcional)
     this.lapText = this.add.text(20, 20, `Vueltas: 0/${this.gameState.requiredLaps}`, {
       fontSize: "24px",
       fill: "#ffffff",
@@ -98,7 +98,7 @@ export default class GameScene extends Phaser.Scene {
 
   setupPhysics() {
     // Posicionamos los karts en la línea de salida (parte inferior del mundo)
-    this.playerStartY = 8500;  // Se usará para calcular el progreso
+    this.playerStartY = 8500;  // Para calcular el progreso
     this.player = this.physics.add.sprite(950, this.playerStartY, "mileiKart")
       .setScale(0.1)
       .setCollideWorldBounds(true)
@@ -109,7 +109,7 @@ export default class GameScene extends Phaser.Scene {
       .setScale(0.1)
       .setCollideWorldBounds(true);
 
-    // Zona de colisión más amplia
+    // Aumentamos la zona de colisión
     this.player.body.setCircle(this.player.displayWidth * 0.6);
     this.opponent.body.setCircle(this.opponent.displayWidth * 0.6);
   }
@@ -279,7 +279,7 @@ export default class GameScene extends Phaser.Scene {
       }
     }
 
-    // Aplicar boost si está activo
+    // Aplicar boost si está activo (aceleración mayor)
     const acceleration = this.gameState.boostActive ? 800 : 600;
     const vec = this.gameState.joystickVector;
     this.player.setAccelerationX(vec.x * acceleration);
@@ -346,7 +346,7 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  // --- Disparo y manejo de daño (se mantiene para compatibilidad, aunque el foco es la carrera) ---
+  // --- Disparo y manejo de daño (se mantiene para compatibilidad) ---
   fireBullet(user, target, options) {
     const source = user === "player" ? this.player : this.opponent;
     const bulletSpeed = options.speed;
@@ -412,7 +412,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   handleAttack() {
-    // Lógica de ataque (se mantiene, aunque la carrera se centra en alcanzar la meta)
+    // Lógica de ataque (se mantiene para compatibilidad)
     this.sound.play("attackSound");
     // Ejemplo: disparar hacia el oponente
     this.fireBullet("player", this.opponent, { damage: 15, speed: 500, texture: "bullet" });
@@ -425,7 +425,7 @@ export default class GameScene extends Phaser.Scene {
       "powerUpShield",
       "powerUpHostigamiento"
     ];
-    // Se usa un tipo aleatorio, pero el efecto será activar el boost
+    // Se usa un tipo aleatorio; el efecto es activar el boost
     const randomType = Phaser.Utils.Array.GetRandom(types);
     const powerUp = this.powerUps.create(
       Phaser.Math.Between(100, 1900),
