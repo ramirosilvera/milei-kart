@@ -4,7 +4,7 @@ export default class CircuitScene extends Phaser.Scene {
   }
 
   preload() {
-    // Carga la imagen del circuito
+    // Carga la imagen del circuito desde la carpeta assets/images
     this.load.image("trackBackground", "assets/images/track_background.png");
   }
 
@@ -14,7 +14,6 @@ export default class CircuitScene extends Phaser.Scene {
     const worldHeight = 2000;
 
     // Agregamos el fondo del circuito (track_background.png)
-    // Puedes usar un TileSprite si prefieres que se repita, aquí usamos una sola imagen grande.
     this.add.image(0, 0, "trackBackground")
       .setOrigin(0, 0)
       .setDisplaySize(worldWidth, worldHeight);
