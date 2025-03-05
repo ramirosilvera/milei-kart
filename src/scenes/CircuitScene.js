@@ -1,4 +1,3 @@
-// CircuitScene.js - Escena del Circuito Mejorada
 export default class CircuitScene extends Phaser.Scene {
     constructor() {
         super("CircuitScene");
@@ -6,13 +5,14 @@ export default class CircuitScene extends Phaser.Scene {
 
     preload() {
         this.load.image("trackBackground", "assets/images/track_background.png");
+        // Se asume que el asset "flares" ya está cargado en otra parte o disponible
     }
 
     create() {
         const worldWidth = 2000;
         const worldHeight = 2000;
 
-        // Fondo del circuito
+        // Fondo del circuito (pista recta)
         this.add.image(0, 0, "trackBackground")
             .setOrigin(0, 0)
             .setDisplaySize(worldWidth, worldHeight);
@@ -21,19 +21,23 @@ export default class CircuitScene extends Phaser.Scene {
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
-        // Línea de meta mejorada
+        // Línea de meta en la parte superior de la pista
         this.createFinishLine();
-        
-        // Señalización direccional
+
+        // Señalización direccional (adaptada para pista recta)
         this.createDirectionSigns();
-        
-        // Checkpoints
+
+        // Crear marcadores de carril (lane markers)
+        this.createLaneMarkers();
+
+        // Checkpoints para feedback durante la carrera
         this.createCheckpoints();
     }
 
     createFinishLine() {
+        // Posicionar la meta en la parte superior central de la pista
         const finishLineX = 950;
-        const finishLineY = 1800;
+        const finishLineY = 50;  // Antes 1800, ahora en la parte superior
         const finishLineWidth = 100;
         const finishLineHeight = 10;
 
@@ -42,24 +46,27 @@ export default class CircuitScene extends Phaser.Scene {
             .setOrigin(0)
             .setRectangleDropZone(finishLineWidth, finishLineHeight);
 
+        // Guardar la zona de meta en el registry para que GameScene pueda acceder a ella
+        this.registry.set("finishLine", this.finishLine);
+
         // Gráficos de la línea de meta
         const flagPole = this.add.line(
-            finishLineX + finishLineWidth/2 - 15,
-            finishLineY - 50,
-            0, 0, 0, 50,
+            finishLineX + finishLineWidth / 2 - 15,
+            finishLineY + 50, // Ajustado para que se vea debajo de la línea
+            0, 0, 0, -50,
             0xffffff
         ).setLineWidth(4);
 
         const flag = this.add.graphics()
             .fillStyle(0xff0000, 1)
-            .fillRect(finishLineX + finishLineWidth/2 - 10, finishLineY - 50, 30, 20)
+            .fillRect(finishLineX + finishLineWidth / 2 - 10, finishLineY + 30, 30, 20)
             .lineStyle(2, 0x000000)
-            .strokeRect(finishLineX + finishLineWidth/2 - 10, finishLineY - 50, 30, 20);
+            .strokeRect(finishLineX + finishLineWidth / 2 - 10, finishLineY + 30, 30, 20);
 
         // Texto de meta
         this.add.text(
-            finishLineX + finishLineWidth/2,
-            finishLineY - 80,
+            finishLineX + finishLineWidth / 2,
+            finishLineY + 10,
             "META",
             {
                 fontSize: "28px",
@@ -74,7 +81,7 @@ export default class CircuitScene extends Phaser.Scene {
         this.finishParticles = this.add.particles("flares")
             .createEmitter({
                 frame: "white",
-                x: finishLineX + finishLineWidth/2,
+                x: finishLineX + finishLineWidth / 2,
                 y: finishLineY,
                 speed: { min: -50, max: 50 },
                 angle: { min: -85, max: -95 },
@@ -86,10 +93,10 @@ export default class CircuitScene extends Phaser.Scene {
     }
 
     createDirectionSigns() {
+        // Para una pista recta, señalizamos "PISTA RECTA" y "¡CUIDADO OBSTÁCULOS!"
         const signs = [
-            { x: 1000, y: 1700, text: "CURVA\nCERRADA", angle: 0, color: 0xFFA500 },
-            { x: 1200, y: 1300, text: "GIRO\nIZQ", angle: -45, color: 0x00FF00 },
-            { x: 800, y: 1100, text: "DESVÍO\n→", angle: 25, color: 0xFFFF00 }
+            { x: 1000, y: 1000, text: "PISTA\nRECTA", angle: 0, color: 0x00BFFF },
+            { x: 1100, y: 600, text: "¡CUIDADO\nOBSTÁCULOS!", angle: 0, color: 0xFF4500 }
         ];
 
         signs.forEach(signData => {
@@ -135,11 +142,26 @@ export default class CircuitScene extends Phaser.Scene {
         });
     }
 
+    createLaneMarkers() {
+        const worldWidth = 2000;
+        const worldHeight = 2000;
+        const centerX = worldWidth / 2;
+        const markerLength = 30;
+        const gap = 20;
+
+        const graphics = this.add.graphics();
+        graphics.lineStyle(4, 0xffffff, 0.5);
+
+        for (let y = 0; y < worldHeight; y += markerLength + gap) {
+            graphics.strokeLineShape(new Phaser.Geom.Line(centerX, y, centerX, y + markerLength));
+        }
+    }
+
     createCheckpoints() {
         const checkpoints = [
-            { x: 500, y: 1500 },
-            { x: 1500, y: 800 },
-            { x: 1800, y: 1700 }
+            { x: 1000, y: 1500 },
+            { x: 1000, y: 1000 },
+            { x: 1000, y: 500 }
         ];
 
         checkpoints.forEach((cp, index) => {
