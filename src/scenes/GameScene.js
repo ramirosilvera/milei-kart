@@ -4,7 +4,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    // Cargamos imágenes
+    // Imágenes
     this.load.image("mileiKart", "assets/images/mileiKart.png");
     this.load.image("opponentKart", "assets/images/opponentKart.png");
     this.load.image("bullet", "assets/images/bullet.png");
@@ -12,7 +12,6 @@ export default class GameScene extends Phaser.Scene {
     this.load.image("powerUpRetuits", "assets/images/powerUpRetuits.png");
     this.load.image("powerUpShield", "assets/images/powerUpShield.png");
     this.load.image("powerUpHostigamiento", "assets/images/powerUpHostigamiento.png");
-
     // Sonidos
     this.load.audio("bgMusic", "assets/sounds/bgMusic.mp3");
     this.load.audio("attackSound", "assets/sounds/attackSound.mp3");
@@ -20,7 +19,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
-    // Pista: ancho = 1000, alto = 9000
+    // Pista definida en CircuitScene: ancho = 1000, alto = 9000
     const worldWidth = 1000;
     const worldHeight = 9000;
     this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
@@ -32,7 +31,7 @@ export default class GameScene extends Phaser.Scene {
       opponentHealth: 100,
       joystickVector: new Phaser.Math.Vector2(0, 0),
       boostActive: false,
-      // El jugador puede recoger power ups; el oponente NO
+      // El jugador es el único que recoge power ups (se guardan en playerPowerUp)
       playerPowerUp: null
     };
     this.gameOver = false;
@@ -40,7 +39,6 @@ export default class GameScene extends Phaser.Scene {
 
     // Cronómetro de carrera
     this.raceStartTime = this.time.now;
-
     this.lapText = this.add.text(20, 20, "Vueltas: 0/1", {
       fontSize: "24px",
       fill: "#ffffff",
@@ -54,17 +52,19 @@ export default class GameScene extends Phaser.Scene {
     this.bgMusic.play();
     this.playerMotorSound = this.sound.add("motorSound", { loop: true, volume: 0.2 });
 
-    // Configuramos karts y física
+    // Configuramos los karts y la física (se ajusta la colisión con un círculo)
     this.setupPhysics();
+    // Controles (joystick y botón de ataque)
     this.setupControls();
-    // Generamos power ups cada 2 segundos (frecuencia aumentada)
+    // Se generan power ups cada 2 segundos
     this.setupTimers();
+    // Obstáculos colocados en la pista (se aseguran colisiones sólidas)
     this.createObstacles();
 
-    // Obtenemos la zona de meta definida en CircuitScene
+    // Recuperamos la zona de meta definida en CircuitScene
     this.finishLine = this.registry.get("finishLine");
 
-    // Grupo de power ups (solo el jugador podrá recogerlos)
+    // Grupo para power ups (solo recoge el jugador)
     this.powerUps = this.physics.add.group();
 
     // Ruta del oponente (waypoints centrados en la pista)
@@ -77,8 +77,7 @@ export default class GameScene extends Phaser.Scene {
       { x: 500, y: 50 } // Meta
     ];
 
-    // El oponente NO recoge power ups, por lo que solo el jugador es considerado
-    // Comprobación periódica de power ups (cada 500 ms)
+    // Solo el jugador recoge power ups, comprobación cada 500ms
     this.time.addEvent({
       delay: 500,
       callback: this.checkPowerUpCollections,
@@ -86,6 +85,7 @@ export default class GameScene extends Phaser.Scene {
       loop: true
     });
 
+    // La cámara sigue al jugador
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
     if (this.scene.isActive("CircuitScene")) {
       this.scene.sendToBack("CircuitScene");
@@ -93,19 +93,18 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupPhysics() {
-    // Posición de salida centrada en la pista (parte inferior)
+    // Posición de salida centrada (parte inferior de la pista)
     this.playerStartY = 8500;
     this.player = this.physics.add.sprite(500, this.playerStartY, "mileiKart")
       .setScale(0.1)
       .setCollideWorldBounds(true)
       .setDrag(600, 600)
       .setMaxVelocity(300);
-
-    // El oponente inicia cerca, con una ligera ventaja en velocidad (pero no superior)
     this.opponent = this.physics.add.sprite(500, this.playerStartY + 50, "opponentKart")
       .setScale(0.1)
       .setCollideWorldBounds(true);
 
+    // Uso de forma circular para colisiones más precisas
     this.player.body.setCircle(this.player.displayWidth * 0.6);
     this.opponent.body.setCircle(this.opponent.displayWidth * 0.6);
   }
@@ -124,13 +123,11 @@ export default class GameScene extends Phaser.Scene {
       .setStrokeStyle(4, 0xffffff)
       .setScrollFactor(0);
     this.joystickBaseRadius = baseRadius;
-
     const knobRadius = 40;
     this.joystickKnob = this.add.circle(baseX, baseY, knobRadius, 0xee1111, 0.9)
       .setDepth(2)
       .setStrokeStyle(2, 0xffffff)
       .setScrollFactor(0);
-
     this.joystickActive = false;
     this.input.on("pointerdown", (pointer) => {
       const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, baseX, baseY);
@@ -190,9 +187,7 @@ export default class GameScene extends Phaser.Scene {
         scale: 0.9,
         duration: 100,
         ease: "Power1",
-        onComplete: () => {
-          this.handleAttack();
-        }
+        onComplete: () => this.handleAttack()
       });
     });
     this.attackButton.on("pointerup", () => {
@@ -206,7 +201,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupTimers() {
-    // Power ups se generan cada 2 segundos
+    // Genera power ups cada 2 segundos
     this.time.addEvent({
       delay: 2000,
       callback: this.spawnPowerUp,
@@ -216,7 +211,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createObstacles() {
-    // Obstáculos colocados estratégicamente
+    // Obstáculos con colisión sólida
     this.obstacles = [];
     const obstaclesData = [
       { x: 500, y: 8200, width: 100, height: 30 },
@@ -235,7 +230,7 @@ export default class GameScene extends Phaser.Scene {
   update() {
     if (this.gameOver) return;
 
-    // Actualizamos cronómetro y progreso
+    // Actualizamos cronómetro y barra de progreso
     const elapsedTime = (this.time.now - this.raceStartTime) / 1000;
     this.registry.events.emit("updateTimer", elapsedTime);
     const progress = Phaser.Math.Clamp(
@@ -245,7 +240,7 @@ export default class GameScene extends Phaser.Scene {
     );
     this.registry.events.emit("updateProgress", progress);
 
-    // Control del sonido del motor según movimiento
+    // Control del sonido del motor
     if (this.gameState.joystickVector.length() > 0.1) {
       if (!this.playerMotorSound.isPlaying) this.playerMotorSound.play();
     } else {
@@ -258,10 +253,10 @@ export default class GameScene extends Phaser.Scene {
     this.player.setAccelerationX(vec.x * acceleration);
     this.player.setAccelerationY(vec.y * acceleration);
 
-    // Comportamiento del oponente (más rápido y con evasión)
+    // Actualiza la inteligencia del oponente para esquivar obstáculos y seguir su ruta
     this.opponentRacingBehavior();
 
-    // Verificamos el cruce de meta (usando la zona de detección)
+    // Verificamos el cruce de meta (zona de detección de la meta)
     if (this.finishLine) {
       const playerCenter = this.player.getCenter();
       if (Phaser.Geom.Rectangle.ContainsPoint(this.finishLine.getBounds(), playerCenter)) {
@@ -277,35 +272,39 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
+  // Mejorada inteligencia del oponente con detección de obstáculos en un cono frontal
   opponentRacingBehavior() {
-    // Si no quedan waypoints, el oponente se detiene
     if (!this.opponentWaypoints || this.opponentWaypoints.length === 0) return;
 
     const currentWaypoint = this.opponentWaypoints[0];
     const threshold = 20;
-    // Detección de obstáculos: si hay un obstáculo en frente (dentro de 200 px y lateralmente cercano),
-    // se aplica un offset lateral para evadir
     let dodgeOffset = 0;
+    // Detección en un ángulo de ±30° en frente del oponente
+    const toWaypointAngle = Phaser.Math.Angle.Between(this.opponent.x, this.opponent.y, currentWaypoint.x, currentWaypoint.y);
     this.obstacles.forEach(obstacle => {
-      if (obstacle.y > this.opponent.y - 200 && obstacle.y < this.opponent.y && Math.abs(obstacle.x - this.opponent.x) < 60) {
-        dodgeOffset = (this.opponent.x >= obstacle.x) ? 50 : -50;
+      // Calculamos el ángulo desde el oponente al obstáculo
+      const angleToObstacle = Phaser.Math.Angle.Between(this.opponent.x, this.opponent.y, obstacle.x, obstacle.y);
+      const diffAngle = Phaser.Math.Angle.Wrap(toWaypointAngle - angleToObstacle);
+      // Si el obstáculo está dentro de ±30° y cerca (dentro de 250 px), ajustamos el dodge
+      if (Math.abs(diffAngle) < Phaser.Math.DegToRad(30) && Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, obstacle.x, obstacle.y) < 250) {
+        // Si el obstáculo está a la izquierda, empuja a la derecha y viceversa
+        dodgeOffset += (obstacle.x < this.opponent.x) ? 30 : -30;
       }
     });
-    // Además, si se detecta un "ataque" (simulado: si hay un bullet cercano, por ejemplo) se puede incrementar el offset
-    // (En este ejemplo se omite la detección de bullet para simplificar, pero se puede extender)
 
+    // Si se acerca al waypoint, se retira ese waypoint
     if (Phaser.Math.Distance.Between(this.opponent.x, this.opponent.y, currentWaypoint.x, currentWaypoint.y) < threshold) {
       this.opponentWaypoints.shift();
     } else {
       let targetX = currentWaypoint.x + dodgeOffset;
       let targetY = currentWaypoint.y;
-      // El oponente es un poco más rápido (pero sin superar al jugador)
+      // El oponente se mueve ligeramente más rápido, pero sin sobrepasar al jugador
       this.physics.moveTo(this.opponent, targetX, targetY, 170);
     }
   }
 
+  // Solo el jugador recoge power ups
   checkPowerUpCollections() {
-    // Solo el jugador recoge power ups
     const collectThreshold = 40;
     this.powerUps.getChildren().forEach(powerUp => {
       if (!powerUp.active) return;
@@ -317,139 +316,62 @@ export default class GameScene extends Phaser.Scene {
   }
 
   collectPowerUp(sprite, powerUp) {
-    // El jugador recoge el power up y lo guarda para usarlo al atacar
     powerUp.destroy();
-    this.gameState.playerPowerUp = powerUp.texture.key; 
+    // Guardamos el tipo de power up recogido
+    this.gameState.playerPowerUp = powerUp.texture.key;
     this.showPowerUpMessage("¡Power Up recogido!", sprite.x, sprite.y - 50);
   }
 
-  // Cuando el jugador ataca, se usa el power up recogido para aplicar el efecto opuesto al oponente
+  // En el ataque se usa el power up recogido para aplicar un efecto negativo al oponente
   handleAttack() {
     if (!this.gameState.playerPowerUp) return;
-    // Reproducimos sonido de ataque
     this.sound.play("attackSound");
-    // Dependiendo del tipo de power up, aplicamos el efecto opuesto en el oponente
     switch (this.gameState.playerPowerUp) {
       case "powerUpDesinformation":
-        // Por ejemplo: reducir la velocidad del oponente
         this.applyNegativeEffect(this.opponent, 0.5);
         break;
       case "powerUpRetuits":
-        // Otra opción: desorientar al oponente (jitter)
         this.applyJitter(this.opponent);
         break;
       case "powerUpShield":
-        // Podríamos invertir el escudo: quitarle invulnerabilidad temporal
         this.applyNegativeEffect(this.opponent, 0.8);
         break;
       case "powerUpHostigamiento":
-        // Otro efecto: provocar un breve retroceso
         this.applyKnockback(this.opponent, 100);
         break;
       default:
-        // Efecto por defecto: ralentizar
         this.applyNegativeEffect(this.opponent, 0.7);
     }
-    // Se consume el power up
+    // Para mostrar el disparo, lanzamos una bala desde el frente del jugador
+    this.fireBullet(this.player, this.opponent, { damage: 15, speed: 500, texture: "bullet" });
     this.gameState.playerPowerUp = null;
   }
 
-  // Efecto que reduce la velocidad del sprite afectado (multiplicador < 1 significa ralentización)
-  applyNegativeEffect(target, speedMultiplier) {
-    target.body.maxVelocity *= speedMultiplier;
-    target.setTint(0x999999);
-    this.showPowerUpMessage("¡Ataque recibido!", target.x, target.y - 50);
-    this.time.delayedCall(3000, () => {
-      target.body.maxVelocity = 300; // Se restablece al valor original
-      target.clearTint();
-    });
-  }
-
-  // Efecto de jitter: mueve aleatoriamente el sprite afectado por un breve periodo
-  applyJitter(target) {
-    this.showPowerUpMessage("¡Desorientado!", target.x, target.y - 50);
-    this.tweens.add({
-      targets: target,
-      x: { value: target.x + Phaser.Math.Between(-30, 30), duration: 100, ease: "Sine.easeInOut", yoyo: true, repeat: 5 },
-      onComplete: () => target.clearTint()
-    });
-    target.setTint(0xff5555);
-  }
-
-  // Efecto de knockback: empuja al sprite afectado hacia atrás
-  applyKnockback(target, force) {
-    const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, target.x, target.y);
-    target.setVelocity(-Math.cos(angle) * force, -Math.sin(angle) * force);
-    target.setTint(0xff0000);
-    this.showPowerUpMessage("¡Retroceso!", target.x, target.y - 50);
-    this.time.delayedCall(500, () => {
-      target.clearTint();
-    });
-  }
-
-  spawnPowerUp() {
-    // Se generan más power ups (cada 2 segundos) y se colocan aleatoriamente en la pista
-    const types = [
-      "powerUpDesinformation",
-      "powerUpRetuits",
-      "powerUpShield",
-      "powerUpHostigamiento"
-    ];
-    const randomType = Phaser.Utils.Array.GetRandom(types);
-    const powerUp = this.powerUps.create(
-      Phaser.Math.Between(50, 950),
-      Phaser.Math.Between(100, 8900),
-      randomType
-    )
-      .setScale(0.2)
-      .setAlpha(1);
-    this.tweens.add({
-      targets: powerUp,
-      y: powerUp.y - 30,
-      duration: 1000,
-      yoyo: true,
-      repeat: -1
-    });
-  }
-
-  showPowerUpMessage(message, x, y) {
-    const msg = this.add.text(x, y, message, {
-      fontSize: "24px",
-      fill: "#ffcc00",
-      fontStyle: "bold",
-      stroke: "#000",
-      strokeThickness: 4
-    }).setOrigin(0.5);
-    this.tweens.add({
-      targets: msg,
-      y: y - 50,
-      alpha: 0,
-      duration: 1500,
-      ease: "Power1",
-      onComplete: () => msg.destroy()
-    });
-  }
-
-  fireBullet(user, target, options) {
-    const source = (user === "player") ? this.player : this.opponent;
-    const bulletSpeed = options.speed;
-    const startX = source.x;
-    const startY = source.y;
-    const targetX = target.x;
-    const targetY = target.y;
-    const distance = Phaser.Math.Distance.Between(startX, startY, targetX, targetY);
-    const timeToHit = (distance / bulletSpeed) * 1000;
+  // Disparo con animación: la bala sale desde el frente del jugador
+  fireBullet(source, target, options) {
+    // Calcular el ángulo desde el jugador hasta el oponente
+    const angle = Phaser.Math.Angle.Between(source.x, source.y, target.x, target.y);
+    // Usamos un offset para que la bala salga del frente del kart
+    const offset = source.displayWidth * 0.5;
+    const startX = source.x + Math.cos(angle) * offset;
+    const startY = source.y + Math.sin(angle) * offset;
     const bullet = this.add.sprite(startX, startY, options.texture || "bullet");
     bullet.setScale(0.4);
+    // Rotamos la bala para que apunte en la dirección correcta
+    bullet.setRotation(angle);
+    // Calculamos el tiempo de viaje
+    const distance = Phaser.Math.Distance.Between(startX, startY, target.x, target.y);
+    const timeToHit = (distance / options.speed) * 1000;
     this.tweens.add({
       targets: bullet,
-      x: targetX,
-      y: targetY,
+      x: target.x,
+      y: target.y,
       duration: timeToHit,
       ease: "Linear",
       onComplete: () => {
         bullet.destroy();
-        const currentDistance = Phaser.Math.Distance.Between(targetX, targetY, target.x, target.y);
+        // Se comprueba el daño si la bala impacta
+        const currentDistance = Phaser.Math.Distance.Between(target.x, target.y, target.x, target.y);
         const HITBOX_RADIUS = 40;
         if (currentDistance <= HITBOX_RADIUS) {
           this.applyDamage(target, options.damage);
@@ -458,9 +380,39 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  // Efecto de reducción de velocidad en el oponente
+  applyNegativeEffect(target, speedMultiplier) {
+    const originalMax = target.body.maxVelocity;
+    target.body.maxVelocity *= speedMultiplier;
+    target.setTint(0x999999);
+    this.showPowerUpMessage("¡Ataque recibido!", target.x, target.y - 50);
+    this.time.delayedCall(3000, () => {
+      target.body.maxVelocity = 300;
+      target.clearTint();
+    });
+  }
+
+  // Efecto de jitter: desplaza al oponente de forma aleatoria
+  applyJitter(target) {
+    target.setTint(0xff5555);
+    this.showPowerUpMessage("¡Desorientado!", target.x, target.y - 50);
+    this.tweens.add({
+      targets: target,
+      x: { value: target.x + Phaser.Math.Between(-30, 30), duration: 100, ease: "Sine.easeInOut", yoyo: true, repeat: 5 },
+      onComplete: () => target.clearTint()
+    });
+  }
+
+  // Efecto de knockback: empuja al oponente hacia atrás
+  applyKnockback(target, force) {
+    const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, target.x, target.y);
+    target.setVelocity(-Math.cos(angle) * force, -Math.sin(angle) * force);
+    target.setTint(0xff0000);
+    this.showPowerUpMessage("¡Retroceso!", target.x, target.y - 50);
+    this.time.delayedCall(500, () => target.clearTint());
+  }
+
   applyDamage(target, damage) {
-    if (target === this.player && this.gameState.playerInvulnerable) return;
-    if (target === this.opponent && this.gameState.opponentInvulnerable) return;
     if (target === this.player) {
       this.gameState.playerHealth = Phaser.Math.Clamp(this.gameState.playerHealth - damage, 0, 100);
     } else {
@@ -471,9 +423,7 @@ export default class GameScene extends Phaser.Scene {
       opponent: this.gameState.opponentHealth
     });
     target.setTint(0xff0000);
-    this.time.delayedCall(300, () => {
-      target.clearTint();
-    });
+    this.time.delayedCall(300, () => target.clearTint());
   }
 
   endGame(winner) {
