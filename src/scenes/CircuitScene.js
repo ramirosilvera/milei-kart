@@ -4,38 +4,49 @@ export default class CircuitScene extends Phaser.Scene {
   }
 
   preload() {
-    // En esta escena NO cargamos la imagen de fondo,
-    // pues se maneja por CSS (por ejemplo, en index.html o main.css).
+    // Carga la imagen del circuito
+    this.load.image("trackBackground", "assets/images/track_background.png");
   }
 
   create() {
-    // Definimos el tamaño del mundo (por ejemplo, 2000x2000)
+    // Dimensiones del mundo
     const worldWidth = 2000;
     const worldHeight = 2000;
 
-    // Configuramos los límites del mundo para la física y la cámara
+    // Agregamos el fondo del circuito (track_background.png)
+    // Puedes usar un TileSprite si prefieres que se repita, aquí usamos una sola imagen grande.
+    this.add.image(0, 0, "trackBackground")
+      .setOrigin(0, 0)
+      .setDisplaySize(worldWidth, worldHeight);
+
+    // Configuramos los límites del mundo
     this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
     this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
-    // Dibujamos la línea de meta (finish line) de forma sencilla
-    // Por ejemplo, ubicamos la línea en la parte inferior del circuito
+    // Dibujamos la línea de meta (rectángulo blanco y texto de "FINISH")
     const finishLineX = 950;
     const finishLineY = 1800;
     const finishLineWidth = 100;
     const finishLineHeight = 10;
 
-    let graphics = this.add.graphics();
+    const graphics = this.add.graphics();
     graphics.fillStyle(0xffffff, 1);
     graphics.fillRect(finishLineX, finishLineY, finishLineWidth, finishLineHeight);
 
-    // Agregamos un texto indicativo de "FINISH"
-    this.add.text(finishLineX + finishLineWidth / 2, finishLineY - 20, "FINISH", {
-      fontSize: "20px",
-      fill: "#fff",
-      fontStyle: "bold",
-    }).setOrigin(0.5);
+    this.add.text(
+      finishLineX + finishLineWidth / 2,
+      finishLineY - 20,
+      "FINISH",
+      {
+        fontSize: "20px",
+        fill: "#fff",
+        fontStyle: "bold",
+        stroke: "#000",
+        strokeThickness: 3,
+      }
+    ).setOrigin(0.5);
 
-    // Guardamos la zona de la línea de meta en el registry para que GameScene la use
+    // Creamos un rectángulo geométrico para la línea de meta y lo guardamos en el registry
     const finishLineRect = new Phaser.Geom.Rectangle(
       finishLineX,
       finishLineY,
