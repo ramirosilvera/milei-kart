@@ -24,7 +24,7 @@ export default class UIScene extends Phaser.Scene {
       fontStyle: "bold"
     });
 
-    // Cronómetro (central superior)
+    // Cronómetro (centrado en la parte superior)
     this.timerText = this.add.text(this.cameras.main.width / 2, 20, "Tiempo: 0.0s", {
       fontSize: "24px",
       fill: "#ffcc00",
@@ -33,7 +33,7 @@ export default class UIScene extends Phaser.Scene {
       strokeThickness: 3
     }).setOrigin(0.5).setScrollFactor(0);
 
-    // Indicador de progreso (en la parte inferior)
+    // Indicador de progreso (parte inferior)
     const progressBarBg = this.add.rectangle(this.cameras.main.width / 2, this.cameras.main.height - 40, 400, 30, 0x000000, 0.8).setScrollFactor(0);
     this.progressBar = this.add.rectangle(this.cameras.main.width / 2 - 200, this.cameras.main.height - 40, 0, 30, 0x00ff00).setOrigin(0, 0.5).setScrollFactor(0);
     this.progressText = this.add.text(this.cameras.main.width / 2, this.cameras.main.height - 40, "Progreso: 0%", {
@@ -62,7 +62,6 @@ export default class UIScene extends Phaser.Scene {
       const playerWidth = (data.player / 100) * 300;
       this.playerHealthBar.width = playerWidth;
       playerHealthText.setText("Jugador: " + data.player);
-
       const opponentWidth = (data.opponent / 100) * 300;
       this.opponentHealthBar.width = opponentWidth;
       opponentHealthText.setText("Oponente: " + data.opponent);
