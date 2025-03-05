@@ -4,7 +4,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    // Cargamos assets del juego
+    // Cargamos los assets de imágenes desde la carpeta assets/images
     this.load.image("mileiKart", "assets/images/mileiKart.png");
     this.load.image("opponentKart", "assets/images/opponentKart.png");
     this.load.image("bullet", "assets/images/bullet.png");
@@ -12,6 +12,8 @@ export default class GameScene extends Phaser.Scene {
     this.load.image("powerUpRetuits", "assets/images/powerUpRetuits.png");
     this.load.image("powerUpShield", "assets/images/powerUpShield.png");
     this.load.image("powerUpHostigamiento", "assets/images/powerUpHostigamiento.png");
+
+    // Cargamos los sonidos desde la carpeta assets/sounds
     this.load.audio("bgMusic", "assets/sounds/bgMusic.mp3");
     this.load.audio("attackSound", "assets/sounds/attackSound.mp3");
   }
@@ -35,7 +37,7 @@ export default class GameScene extends Phaser.Scene {
       attackCooldown: false,
       opponentAttackCooldown: false,
       lapCount: 0,
-      requiredLaps: 3, // Puedes cambiar a 5 o 7 para mayor dificultad
+      requiredLaps: 3, // Cambia a 5 o 7 para mayor dificultad
     };
     this.gameOver = false;
     this.crossedFinishLine = false;
@@ -198,6 +200,7 @@ export default class GameScene extends Phaser.Scene {
         },
       });
     });
+
     this.attackButton.on("pointerup", () => {
       this.tweens.add({
         targets: [this.attackButton, buttonText],
@@ -348,8 +351,8 @@ export default class GameScene extends Phaser.Scene {
         this.fireBullet(user, target, { damage: 35, speed: 500, texture: powerUpType });
         break;
       case "powerUpRetuits":
-        // Dispara varios proyectiles con ángulos ligeros (ejemplo)
-        [-15, 0, 15].forEach((angleOffset) => {
+        // Dispara varios proyectiles con ángulos ligeros
+        [-15, 0, 15].forEach(() => {
           this.fireBullet(user, target, { damage: 15, speed: 500, texture: powerUpType });
         });
         break;
@@ -538,7 +541,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.gameOver) return;
     this.gameOver = true;
     this.bgMusic.stop();
-    // Ejemplo: lanzar escena final
+    // Asegúrate de tener definida la escena "EndScene" o modifica esta parte si no la usas
     this.scene.start("EndScene", { winner });
   }
 }
