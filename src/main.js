@@ -18,7 +18,7 @@ const config = {
             debug: false
         }
     },
-    scene: [BootScene, PreloadScene, MenuScene, CircuitScene,GameScene, UIScene, EndScene],
+    scene: [BootScene, PreloadScene, MenuScene, CircuitScene,GameScene, EndScene],
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
