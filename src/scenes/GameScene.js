@@ -16,6 +16,7 @@ export default class GameScene extends Phaser.Scene {
     // Cargamos sonidos desde assets/sounds
     this.load.audio("bgMusic", "assets/sounds/bgMusic.mp3");
     this.load.audio("attackSound", "assets/sounds/attackSound.mp3");
+    this.load.audio("motorSound", "assets/sounds/motor.mp3"); // Sonido del motor
   }
 
   create() {
@@ -54,10 +55,14 @@ export default class GameScene extends Phaser.Scene {
     this.bgMusic = this.sound.add("bgMusic", { loop: true, volume: 0.5 });
     this.bgMusic.play();
 
+    // Sonido del motor (con volumen bajo para no generar contaminación auditiva)
+    this.playerMotorSound = this.sound.add("motorSound", { loop: true, volume: 0.2 });
+
     // Configuramos los karts y la física
     this.setupPhysics();
     this.setupControls();
     this.setupTimers();
+    this.createObstacles();
 
     // Recuperamos la zona de la línea de meta (definida en CircuitScene)
     this.finishLine = this.registry.get("finishLine");
@@ -79,7 +84,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupPhysics() {
-    // Posicionamos los karts cerca de la línea de meta para iniciar la carrera
+    // Posicionamos los karts cerca de la línea de meta para iniciar la carrera (en la parte inferior)
     this.player = this.physics.add.sprite(1000, 1750, "mileiKart")
       .setScale(0.1)
       .setCollideWorldBounds(true)
@@ -221,8 +226,40 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  createObstacles() {
+    // Creamos obstáculos estáticos en la pista para aumentar el desafío
+    this.obstacles = [];
+    const obstaclesData = [
+      { x: 1000, y: 1300, width: 100, height: 30 },
+      { x: 800, y: 1000, width: 80, height: 80 },
+      { x: 1200, y: 800, width: 50, height: 150 }
+    ];
+
+    obstaclesData.forEach(data => {
+      const obstacle = this.add.rectangle(data.x, data.y, data.width, data.height, 0x666666);
+      // Hacemos que el obstáculo sea parte de la física estática
+      this.physics.add.existing(obstacle, true);
+      this.obstacles.push(obstacle);
+
+      // Añadimos colisión entre los karts y el obstáculo
+      this.physics.add.collider(this.player, obstacle);
+      this.physics.add.collider(this.opponent, obstacle);
+    });
+  }
+
   update() {
     if (this.gameOver) return;
+
+    // Reproducir sonido del motor cuando el jugador se mueve
+    if (this.gameState.joystickVector.length() > 0.1) {
+      if (!this.playerMotorSound.isPlaying) {
+        this.playerMotorSound.play();
+      }
+    } else {
+      if (this.playerMotorSound.isPlaying) {
+        this.playerMotorSound.stop();
+      }
+    }
 
     // Movimiento del jugador según el vector del joystick
     const acceleration = 600;
@@ -236,7 +273,7 @@ export default class GameScene extends Phaser.Scene {
     // Verificación de la línea de meta
     if (this.finishLine) {
       const playerCenter = this.player.getCenter();
-      if (Phaser.Geom.Rectangle.ContainsPoint(this.finishLine, playerCenter)) {
+      if (Phaser.Geom.Rectangle.ContainsPoint(this.finishLine.getBounds(), playerCenter)) {
         if (!this.crossedFinishLine) {
           this.gameState.lapCount++;
           this.lapText.setText(`Vueltas: ${this.gameState.lapCount}/${this.gameState.requiredLaps}`);
@@ -535,5 +572,55 @@ export default class GameScene extends Phaser.Scene {
     this.bgMusic.stop();
     // Asegúrate de tener definida la escena "EndScene" o modifica esta parte
     this.scene.start("EndScene", { winner });
+  }
+}
+
+export default class UIScene extends Phaser.Scene {
+  constructor() {
+    super("UIScene");
+  }
+
+  create() {
+    this.uiContainer = this.add.container(0, 0);
+
+    // Barra de salud del jugador (esquina superior izquierda)
+    const playerHealthBg = this.add.rectangle(50, 20, 300, 50, 0x000000, 0.7).setOrigin(0);
+    this.playerHealthBar = this.add.rectangle(50, 20, 300, 50, 0x00ff00).setOrigin(0);
+    const playerHealthText = this.add.text(60, 30, "Jugador: 100", {
+      fontSize: "28px",
+      fill: "#ffffff",
+      fontStyle: "bold",
+    });
+
+    // Barra de salud del oponente (esquina superior derecha)
+    const opponentHealthBg = this.add.rectangle(this.cameras.main.width - 350, 20, 300, 50, 0x000000, 0.7).setOrigin(0);
+    this.opponentHealthBar = this.add.rectangle(this.cameras.main.width - 350, 20, 300, 50, 0xff0000).setOrigin(0);
+    const opponentHealthText = this.add.text(this.cameras.main.width - 340, 30, "Oponente: 100", {
+      fontSize: "28px",
+      fill: "#ffffff",
+      fontStyle: "bold",
+    });
+
+    this.uiContainer.add([
+      playerHealthBg,
+      this.playerHealthBar,
+      playerHealthText,
+      opponentHealthBg,
+      this.opponentHealthBar,
+      opponentHealthText,
+    ]);
+
+    this.playerHealthText = playerHealthText;
+    this.opponentHealthText = opponentHealthText;
+
+    this.registry.events.on("updateHealth", (data) => {
+      const playerWidth = (data.player / 100) * 300;
+      this.playerHealthBar.width = playerWidth;
+      this.playerHealthText.setText("Jugador: " + data.player);
+
+      const opponentWidth = (data.opponent / 100) * 300;
+      this.opponentHealthBar.width = opponentWidth;
+      this.opponentHealthText.setText("Oponente: " + data.opponent);
+    });
   }
 }
