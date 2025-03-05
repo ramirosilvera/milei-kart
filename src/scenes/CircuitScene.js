@@ -193,7 +193,7 @@ export default class CircuitScene extends Phaser.Scene {
             checkpoint.add([pole, flag, number]);
             
             // Zona de detección (para feedback visual si se pasa)
-            const zone = this.add.zone(cp.x, cp.y, 60, 60)
+            this.add.zone(cp.x, cp.y, 60, 60)
                 .setRectangleDropZone(60, 60)
                 .setData("activated", false);
         });
